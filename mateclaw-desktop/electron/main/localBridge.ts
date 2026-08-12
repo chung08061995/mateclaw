@@ -171,17 +171,17 @@ export class LocalBridge {
         return statPath(params.path)
       case 'write_file': {
         await this.approveOrThrow('write_file', params.filePath,
-          `文件: ${params.filePath}\n\n内容预览:\n${preview(params.content)}`)
+          `File: ${params.filePath}\n\nContent preview:\n${preview(params.content)}`)
         return writeFile(params.filePath, params.content)
       }
       case 'edit_file': {
         await this.approveOrThrow('edit_file', params.filePath,
-          `文件: ${params.filePath}\n\n替换:\n- ${preview(params.oldText, 200)}\n+ ${preview(params.newText, 200)}`)
+          `File: ${params.filePath}\n\nReplacement:\n- ${preview(params.oldText, 200)}\n+ ${preview(params.newText, 200)}`)
         return editFile(params.filePath, params.oldText, params.newText, !!params.replaceAll)
       }
       case 'execute_shell': {
         await this.approveOrThrow('execute_shell', params.command,
-          `命令:\n${params.command}`)
+          `Command:\n${params.command}`)
         return executeShell(params.command, params.timeoutSeconds || 60)
       }
       default:

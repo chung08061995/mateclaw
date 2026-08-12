@@ -8,19 +8,6 @@
     <div class="settings-card">
       <div class="setting-item">
         <div class="setting-info">
-          <div class="setting-label">{{ t('settings.fields.language') }}</div>
-          <div class="setting-hint">{{ t('settings.hints.language') }}</div>
-        </div>
-        <div class="setting-control">
-          <select v-model="settings.language" class="form-input">
-            <option value="zh-CN">{{ t('settings.languageOptions.zhCN') }}</option>
-            <option value="en-US">{{ t('settings.languageOptions.enUS') }}</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <div class="setting-info">
           <div class="setting-label">{{ t('settings.fields.streamEnabled') }}</div>
           <div class="setting-hint">{{ t('settings.hints.streamEnabled') }}</div>
         </div>
@@ -368,7 +355,7 @@ async function loadProviderCatalog() {
 }
 
 const settings = reactive<SystemSettings>({
-  language: 'zh-CN',
+  language: 'en-US',
   streamEnabled: true,
   debugMode: false,
   showThinking: true,

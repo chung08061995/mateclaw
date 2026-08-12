@@ -294,7 +294,7 @@
                 <input
                   v-model.trim="form.note"
                   class="form-input"
-                  :placeholder="dialogWorkspaceWide ? '请说明为什么需要全工具白名单' : ''"
+                  :placeholder="dialogWorkspaceWide ? 'Explain why all tools must be allowlisted' : ''"
                 />
               </div>
               <div v-if="requiresPassword" class="form-group form-group--full">

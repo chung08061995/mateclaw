@@ -149,10 +149,10 @@
         <div class="config-card__row-text">
           <div class="config-card__title">{{ t('wiki.configPanel.modelStrategy') }}</div>
           <div class="config-card__hint">
-            <template v-if="wikiGlobalModelId && activeStepCount > 0">Wiki 全局已设置，{{ activeStepCount }} 个步骤独立覆盖</template>
-            <template v-else-if="wikiGlobalModelId">Wiki 全局模型已设置，步骤沿用</template>
-            <template v-else-if="activeStepCount > 0">{{ activeStepCount }} 个步骤已绑定自定义模型</template>
-            <template v-else>全部步骤使用系统全局默认模型</template>
+            <template v-if="wikiGlobalModelId && activeStepCount > 0">Wiki default set; {{ activeStepCount }} steps override it</template>
+            <template v-else-if="wikiGlobalModelId">Wiki default set and inherited by all steps</template>
+            <template v-else-if="activeStepCount > 0">{{ activeStepCount }} steps use custom models</template>
+            <template v-else>All steps use the system default model</template>
           </div>
         </div>
         <div class="card-badge" :class="{ 'card-badge--active': activeStepCount > 0 || !!wikiGlobalModelId }">
@@ -171,14 +171,14 @@
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
         </svg>
         <div class="config-card__row-text" style="flex:1;min-width:0">
-          <div class="config-card__title">处理规则</div>
-          <div class="config-card__hint">AI 消化原始材料时遵循的质量、格式和语言规则</div>
+          <div class="config-card__title">Processing rules</div>
+          <div class="config-card__hint">Quality, format, and language rules used while AI processes source material</div>
           <!-- Preview snippet -->
           <div v-if="configContent.trim()" class="rules-snippet">
             <span v-for="(line, i) in snippetLines" :key="i" class="rules-snippet__line" :class="{ 'h': line.startsWith('#') }">{{ line }}</span>
-            <span v-if="totalLines > 4" class="rules-snippet__more">+{{ totalLines - 4 }} 行</span>
+            <span v-if="totalLines > 4" class="rules-snippet__more">+{{ totalLines - 4 }} lines</span>
           </div>
-          <div v-else class="rules-snippet rules-snippet--empty">点击配置 →</div>
+          <div v-else class="rules-snippet rules-snippet--empty">Click to configure →</div>
         </div>
         <svg class="card-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px">
           <polyline points="9 18 15 12 9 6"/>

@@ -20,9 +20,16 @@
 [![Last Commit](https://img.shields.io/github/last-commit/mateaix/mateclaw)](https://github.com/mateaix/mateclaw)
 [![License](https://img.shields.io/badge/license-Apache--2.0-red.svg?logo=opensourceinitiative&label=License)](LICENSE)
 
-[[Website](https://claw.mate.vip)] [[Live Demo](https://claw-demo.mate.vip)] [[Documentation](https://claw.mate.vip/docs)] [[中文](README_zh.md)]
+[[Website](https://claw.mate.vip)] [[Live Demo](https://claw-demo.mate.vip)] [[Documentation](https://claw.mate.vip/docs)]
 
 </div>
+
+> [!NOTE]
+> This fork runs in **English only**. The web console, desktop bootstrap flow,
+> enterprise demo, default workspace seed, system language, and user-facing
+> runtime errors are fixed to `en-US`; the language selector and Chinese UI
+> locale have been removed. Legacy Chinese text recognition remains only where
+> it is required to read existing user content or previously stored errors.
 
 <p align="center">
   <img src="assets/images/preview.png" alt="MateClaw Preview" width="800">

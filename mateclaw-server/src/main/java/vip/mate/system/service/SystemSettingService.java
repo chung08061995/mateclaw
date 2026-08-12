@@ -163,7 +163,7 @@ public class SystemSettingService {
 
     public SystemSettingsDTO getSettings() {
         SystemSettingsDTO dto = new SystemSettingsDTO();
-        dto.setLanguage(getValue(LANGUAGE_KEY, "zh-CN"));
+        dto.setLanguage("en-US");
         dto.setStreamEnabled(Boolean.parseBoolean(getValue(STREAM_ENABLED_KEY, "true")));
         dto.setDebugMode(Boolean.parseBoolean(getValue(DEBUG_MODE_KEY, "false")));
         dto.setShowThinking(Boolean.parseBoolean(getValue(SHOW_THINKING_KEY, "true")));
@@ -325,7 +325,7 @@ public class SystemSettingService {
         // is how streamEnabled kept flipping off (killing live thinking and
         // content streaming) whenever an unrelated settings page was saved.
         if (dto.getLanguage() != null) {
-            saveValue(LANGUAGE_KEY, dto.getLanguage(), "当前界面语言");
+            saveValue(LANGUAGE_KEY, "en-US", "Interface language (fixed for English-only build)");
         }
         if (dto.getStreamEnabled() != null) {
             saveValue(STREAM_ENABLED_KEY, String.valueOf(dto.getStreamEnabled()), "是否开启流式响应");
@@ -618,11 +618,11 @@ public class SystemSettingService {
     }
 
     public String getLanguage() {
-        return getValue(LANGUAGE_KEY, "zh-CN");
+        return "en-US";
     }
 
-    public String saveLanguage(String language) {
-        saveValue(LANGUAGE_KEY, language, "当前界面语言");
+    public String saveLanguage(String ignoredLanguage) {
+        saveValue(LANGUAGE_KEY, "en-US", "Interface language (fixed for English-only build)");
         return getLanguage();
     }
 

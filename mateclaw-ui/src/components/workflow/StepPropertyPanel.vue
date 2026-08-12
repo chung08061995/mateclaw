@@ -530,9 +530,6 @@ function onDispatchTargetInput(channelType: string, raw: string) {
   padding: 0;
   margin-bottom: 2px;
 }
-:lang(zh-CN) .panel-section legend {
-  text-transform: none;
-}
 .panel-field {
   display: flex;
   flex-direction: column;

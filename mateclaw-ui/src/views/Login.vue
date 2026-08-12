@@ -53,7 +53,7 @@
 
       <!-- SSO providers (rendered only when the backend reports enabled providers) -->
       <template v-if="ssoProviders.length > 0">
-        <div class="sso-divider">或使用</div>
+        <div class="sso-divider">Or continue with</div>
         <div class="sso-buttons">
           <button
             v-for="p in ssoProviders"
@@ -63,7 +63,7 @@
             :disabled="loading"
             @click="handleSsoLogin(p.id)"
           >
-            {{ p.displayName }} 登录
+            Sign in with {{ p.displayName }}
           </button>
         </div>
       </template>
@@ -71,13 +71,13 @@
       <!-- SSO bind dialog (link-only mode: user must bind to an existing account) -->
       <div v-if="bindDialog.visible" class="bind-dialog">
         <div class="bind-dialog-content">
-          <h3 class="bind-title">首次使用 {{ bindDialog.provider }} 登录</h3>
-          <p class="bind-desc">请绑定你的 MateClaw 账号</p>
-          <input v-model="bindDialog.username" type="text" class="form-input" placeholder="MateClaw 用户名" autocomplete="username" />
-          <input v-model="bindDialog.password" type="password" class="form-input" placeholder="MateClaw 密码" autocomplete="current-password" />
+          <h3 class="bind-title">First sign-in with {{ bindDialog.provider }}</h3>
+          <p class="bind-desc">Link your MateClaw account</p>
+          <input v-model="bindDialog.username" type="text" class="form-input" placeholder="MateClaw username" autocomplete="username" />
+          <input v-model="bindDialog.password" type="password" class="form-input" placeholder="MateClaw password" autocomplete="current-password" />
           <div v-if="bindDialog.error" class="error-msg">{{ bindDialog.error }}</div>
-          <button class="login-btn" :disabled="loading" @click="handleBind">绑定</button>
-          <button class="bind-cancel" @click="cancelBind">取消</button>
+          <button class="login-btn" :disabled="loading" @click="handleBind">Link account</button>
+          <button class="bind-cancel" @click="cancelBind">Cancel</button>
         </div>
       </div>
 
@@ -182,7 +182,7 @@ async function handleSsoLogin(providerId: string) {
       window.location.href = data.authorizeUrl
     }
   } catch (e: any) {
-    errorMsg.value = typeof e === 'string' ? e : 'SSO 授权失败'
+    errorMsg.value = typeof e === 'string' ? e : 'SSO authorization failed'
     loading.value = false
   }
 }
@@ -209,7 +209,7 @@ async function handleSsoCallback(provider: string, code: string, state: string) 
     // Clean the query params so a refresh doesn't replay the callback.
     router.replace({ path: '/login' })
   } catch (e: any) {
-    errorMsg.value = typeof e === 'string' ? e : 'SSO 登录失败'
+    errorMsg.value = typeof e === 'string' ? e : 'SSO sign-in failed'
   } finally {
     loading.value = false
   }
@@ -226,7 +226,7 @@ async function handleBind() {
     bindDialog.visible = false
     await applyLogin(data)
   } catch (e: any) {
-    bindDialog.error = typeof e === 'string' ? e : '绑定失败，请检查用户名和密码'
+    bindDialog.error = typeof e === 'string' ? e : 'Account linking failed. Check the username and password.'
   } finally {
     loading.value = false
   }

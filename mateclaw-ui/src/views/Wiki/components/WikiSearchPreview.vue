@@ -59,8 +59,8 @@
             <!-- Results -->
             <div v-if="results.length > 0" class="sp-results">
               <div class="sp-results-header">
-                <span>找到 {{ results.length }} 条结果</span>
-                <button class="sp-clear" @click="results = []">清除</button>
+                <span>{{ results.length }} results found</span>
+                <button class="sp-clear" @click="results = []">Clear</button>
               </div>
               <div v-for="(r, idx) in results" :key="r.slug" class="sp-item">
                 <div class="sp-item__rank">{{ idx + 1 }}</div>
@@ -87,12 +87,12 @@
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 <line x1="8" y1="11" x2="14" y2="11"/>
               </svg>
-              <p>无匹配结果</p>
+              <p>No matching results</p>
             </div>
 
             <!-- Hint (before first search) -->
             <div v-else-if="!searched" class="sp-hint">
-              输入问题或关键词，测试知识库的检索效果
+              Enter a question or keyword to test knowledge-base retrieval
             </div>
           </div>
         </div>
@@ -128,9 +128,9 @@ interface SearchResult {
 }
 
 const modes = [
-  { value: 'hybrid', label: '混合' },
-  { value: 'semantic', label: '语义' },
-  { value: 'keyword', label: '关键词' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'semantic', label: 'Semantic' },
+  { value: 'keyword', label: 'Keyword' },
 ]
 
 const query = ref('')

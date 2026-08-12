@@ -683,6 +683,8 @@ const errorDescription = computed(() => {
     // 去掉后端冗余前缀，错误卡标题已经表达了类别
     return raw
       .replace(/^Bad request:\s*/i, '')
+      .replace(/^LLM call failed:\s*/i, '')
+      .replace(/^Authentication failed:\s*/i, '')
       .replace(/^LLM 调用失败[:：]\s*/, '')
       .replace(/^认证失败[:：]\s*/, '')
       .replace(/^\[错误]\s*/, '')
@@ -796,7 +798,7 @@ const displayContent = computed(() => {
   // 过滤审批占位文本 — 这些消息由审批面板展示，不应作为正文显示
   if (text && isApprovalPlaceholder(text)) return ''
   // 有错误卡片时隐藏 [错误] 原始文本，避免重复展示
-  if (status.value === 'failed' && errorInfo.value && text.startsWith('[错误]')) return ''
+  if (status.value === 'failed' && errorInfo.value && /^\[(?:Error|错误)]/.test(text)) return ''
   return linkifyGeneratedFileUrls(text, generatedFileNames.value)
 })
 
@@ -1406,7 +1408,7 @@ function handleFeedbackAction(action: string) {
 
 function feedbackActionLabel(action: string): string {
   // Action labels go through i18n so the same data-driven button list
-  // renders correctly in zh-CN / en-US. Falls back to the raw action
+  // renders correctly in the active locale. Falls back to the raw action
   // key if a future backend introduces a label we haven't translated.
   const key = `chat.feedback.${action}`
   const localized = t(key)

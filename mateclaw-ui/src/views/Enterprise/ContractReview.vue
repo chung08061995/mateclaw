@@ -60,7 +60,7 @@
             <span class="clause-type">{{ cl.type }}</span>
             <span class="clause-loc">{{ cl.location }}</span>
           </div>
-          <blockquote class="clause-quote">「{{ cl.quote }}」</blockquote>
+          <blockquote class="clause-quote">“{{ cl.quote }}”</blockquote>
           <div class="clause-deviation">
             <span class="dev-label">{{ t('enterprise.contract.deviation') }}</span>
             <span>{{ cl.deviation }}</span>
@@ -102,13 +102,13 @@
       <div class="evidence-stack">
         <div class="evidence-block">
           <div class="block-label">{{ t('enterprise.contract.sourceContract') }}</div>
-          <div class="block-quote">「{{ activeClause.quote }}」</div>
+          <div class="block-quote">“{{ activeClause.quote }}”</div>
           <div class="block-loc">{{ selectedCase.title }} · {{ activeClause.location }}</div>
         </div>
 
         <div class="evidence-block">
           <div class="block-label">{{ t('enterprise.contract.playbookRule') }}</div>
-          <div class="block-quote">「{{ activeClause.playbookQuote }}」</div>
+          <div class="block-quote">“{{ activeClause.playbookQuote }}”</div>
           <div class="block-loc">{{ activeClause.playbookRef }}</div>
         </div>
 
@@ -186,113 +186,113 @@ interface Case {
 const cases: Case[] = [
   {
     id: 'msa-acme-2026q2',
-    title: 'Acme Corp - MSA 续约',
-    counterparty: 'Acme Corp (买方)',
+    title: 'Acme Corp - MSA renewal',
+    counterparty: 'Acme Corp (buyer)',
     version: 'v3.2 · 2026-Q2',
-    value: '合同价值 ¥12M / 3 年',
-    line: '业务线：企业版 SaaS',
+    value: 'Contract value $1.7M / 3 years',
+    line: 'Business line: Enterprise SaaS',
     risk: 'high',
     status: 'ai_reviewed',
     clauses: [
       {
         id: 'c1',
-        type: '赔偿条款',
+        type: 'Indemnification',
         risk: 'high',
-        location: '第 8.2 条 · 第 14 页',
-        quote: '乙方应赔偿甲方因履行本协议产生的全部直接和间接损失，包括但不限于利润损失、商誉损失和惩罚性赔偿，无上限',
-        deviation: '我司 Legal Playbook 要求赔偿上限不超过 12 个月服务费，且明确排除惩罚性赔偿与间接损失',
-        suggestion: '改为：乙方对甲方的赔偿责任总额不超过本协议项下最近 12 个月支付的服务费总额；任何一方均不对另一方的间接损失、利润损失或惩罚性赔偿承担责任。',
-        playbookQuote: '所有商务合同的赔偿条款必须包含责任上限（不超过 12 个月服务费）和间接损失排除条款',
-        playbookRef: 'Legal Playbook v3.1 · 第 4.2 节',
+        location: 'Clause 8.2 · Page 14',
+        quote: 'The supplier must indemnify the buyer for all direct and indirect losses arising from this agreement, including lost profits, reputational damage, and punitive damages, without limitation.',
+        deviation: 'Our Legal Playbook requires liability to be capped at 12 months of service fees and expressly excludes punitive and indirect damages.',
+        suggestion: 'Replace with: the supplier’s aggregate liability will not exceed the service fees paid during the preceding 12 months. Neither party is liable for indirect losses, lost profits, or punitive damages.',
+        playbookQuote: 'Every commercial indemnity clause must include a liability cap of no more than 12 months of service fees and an exclusion for indirect losses.',
+        playbookRef: 'Legal Playbook v3.1 · Section 4.2',
         precedents: [
-          { contract: 'Zerto MSA 2025', outcome: '采用阶梯式上限（前 12 月 = 服务费 100%，后续 = 50%）' },
-          { contract: 'BlueWave SLA 2024', outcome: '客户接受 12 个月服务费上限 + 惩罚性赔偿排除' },
+          { contract: 'Zerto MSA 2025', outcome: 'Tiered cap adopted: 100% of fees for the first 12 months, then 50%' },
+          { contract: 'BlueWave SLA 2024', outcome: 'Customer accepted a 12-month fee cap and punitive-damages exclusion' },
         ],
-        confidence: '高（4 项证据）',
+        confidence: 'High (4 evidence items)',
         model: 'Claude Sonnet 4.6',
       },
       {
         id: 'c2',
-        type: '数据保护',
+        type: 'Data protection',
         risk: 'medium',
-        location: '第 11.4 条 · 第 19 页',
-        quote: '任何数据泄露，乙方应在 4 小时内通过书面方式通知甲方',
-        deviation: '我司 Playbook 要求 72 小时通知期，4 小时不切实际且容易触发误报',
-        suggestion: '建议改为 72 小时（与 GDPR 一致），并将"书面"扩展为"任何可追溯的方式（包括邮件、Slack 受控渠道）"',
-        playbookQuote: '数据泄露通知期 = 72 小时，与 GDPR Article 33 对齐',
-        playbookRef: 'Legal Playbook v3.1 · 第 5.1 节',
+        location: 'Clause 11.4 · Page 19',
+        quote: 'The supplier must notify the buyer in writing within four hours of any data breach.',
+        deviation: 'Our Playbook uses a 72-hour notice period. Four hours is operationally unrealistic and likely to create false alarms.',
+        suggestion: 'Use a 72-hour period aligned with GDPR and broaden “in writing” to any auditable channel, including email or an approved Slack channel.',
+        playbookQuote: 'The data-breach notification period is 72 hours, aligned with GDPR Article 33.',
+        playbookRef: 'Legal Playbook v3.1 · Section 5.1',
         precedents: [
-          { contract: 'EuroSoft DPA 2025', outcome: '客户接受 72 小时通知期' },
+          { contract: 'EuroSoft DPA 2025', outcome: 'Customer accepted a 72-hour notification period' },
         ],
-        confidence: '中（2 项证据）',
+        confidence: 'Medium (2 evidence items)',
         model: 'Claude Sonnet 4.6',
       },
       {
         id: 'c3',
-        type: '自动续约',
+        type: 'Automatic renewal',
         risk: 'low',
-        location: '第 2.3 条 · 第 3 页',
-        quote: '本协议自动续约一年，除非任何一方在到期前 30 天书面通知',
-        deviation: '我司 Playbook 推荐 60 天通知期以匹配预算审批流程',
-        suggestion: '修改通知期为 60 天',
-        playbookQuote: '自动续约的退出通知期 ≥ 60 天',
-        playbookRef: 'Legal Playbook v3.1 · 第 3.4 节',
+        location: 'Clause 2.3 · Page 3',
+        quote: 'This agreement renews automatically for one year unless either party gives written notice 30 days before expiration.',
+        deviation: 'Our Playbook recommends 60 days so the opt-out period matches the budget approval cycle.',
+        suggestion: 'Change the notice period to 60 days.',
+        playbookQuote: 'An automatic-renewal opt-out period must be at least 60 days.',
+        playbookRef: 'Legal Playbook v3.1 · Section 3.4',
         precedents: [],
-        confidence: '高（明确 playbook 偏离）',
+        confidence: 'High (clear playbook deviation)',
         model: 'Claude Sonnet 4.6',
       },
     ],
     chain: [
-      { who: 'AI 法务审查员', note: '已完成条款级审查（3 条偏离）', at: '今天 09:42', done: true },
-      { who: '李法务', note: '复核中', at: '今天 10:15', done: false },
-      { who: '法务总监 张律师', note: '待审批', at: null, done: false },
-      { who: 'BD 总监 王经理', note: '待签字', at: null, done: false },
+      { who: 'AI Legal Reviewer', note: 'Clause-level review complete (3 deviations)', at: 'Today, 09:42', done: true },
+      { who: 'Laura Chen', note: 'Review in progress', at: 'Today, 10:15', done: false },
+      { who: 'Daniel Smith, Legal Director', note: 'Awaiting approval', at: null, done: false },
+      { who: 'Morgan Lee, BD Director', note: 'Awaiting signature', at: null, done: false },
     ],
   },
   {
     id: 'nda-vendora',
     title: 'Vendor A NDA',
-    counterparty: 'Vendor A Inc. (供应商)',
+    counterparty: 'Vendor A Inc. (supplier)',
     version: 'v1.0 · 2026-04',
-    value: '保密期：永久',
-    line: '业务线：采购',
+    value: 'Confidentiality term: perpetual',
+    line: 'Business line: Procurement',
     risk: 'high',
     status: 'pending_legal',
     clauses: [
       {
         id: 'c1',
-        type: '非常规竞业',
+        type: 'Non-standard non-compete',
         risk: 'high',
-        location: '第 5.1 条 · 第 4 页',
-        quote: '签署方未来 5 年内不得与对方业务领域有重叠的任何公司发生雇佣或顾问关系',
-        deviation: '我司 Playbook 不允许 NDA 包含竞业条款，更不允许 5 年这种长周期',
-        suggestion: '建议彻底删除第 5.1 条，竞业义务应另行签订独立竞业协议',
-        playbookQuote: 'NDA 不得包含竞业条款；竞业义务需独立协议',
-        playbookRef: 'Legal Playbook v3.1 · 第 6.2 节',
+        location: 'Clause 5.1 · Page 4',
+        quote: 'For five years, a signatory may not accept employment or consulting work with any company operating in an overlapping business area.',
+        deviation: 'Our Playbook does not permit non-compete obligations in an NDA, especially not for a five-year term.',
+        suggestion: 'Delete Clause 5.1. Any non-compete obligation should be negotiated in a separate agreement.',
+        playbookQuote: 'An NDA must not contain non-compete obligations; those obligations require a separate agreement.',
+        playbookRef: 'Legal Playbook v3.1 · Section 6.2',
         precedents: [],
-        confidence: '高',
+        confidence: 'High',
         model: 'Claude Sonnet 4.6',
       },
     ],
     chain: [
-      { who: 'AI 法务审查员', note: '已完成审查（1 条高风险）', at: '今天 08:30', done: true },
-      { who: '王法务', note: '已发起改写沟通', at: '今天 09:15', done: false },
-      { who: '法务总监 张律师', note: '待审批', at: null, done: false },
+      { who: 'AI Legal Reviewer', note: 'Review complete (1 high-risk clause)', at: 'Today, 08:30', done: true },
+      { who: 'William Reed', note: 'Revision request sent', at: 'Today, 09:15', done: false },
+      { who: 'Daniel Smith, Legal Director', note: 'Awaiting approval', at: null, done: false },
     ],
   },
   {
     id: 'q2-vendor-cmp',
-    title: 'Q2 供应商条款横向对比',
-    counterparty: '5 家供应商汇总',
-    version: '对比报告 v1',
-    value: '总合同价值 ¥45M',
-    line: '业务线：采购',
+    title: 'Q2 vendor terms comparison',
+    counterparty: 'Summary of 5 suppliers',
+    version: 'Comparison report v1',
+    value: 'Total contract value $6.3M',
+    line: 'Business line: Procurement',
     risk: 'medium',
     status: 'ai_reviewed',
     clauses: [],
     chain: [
-      { who: 'AI 合同对比员', note: '已生成横向对比报告', at: '昨天 16:00', done: true },
-      { who: '采购总监', note: '复核中', at: null, done: false },
+      { who: 'AI Contract Analyst', note: 'Comparison report generated', at: 'Yesterday, 16:00', done: true },
+      { who: 'Procurement Director', note: 'Review in progress', at: null, done: false },
     ],
   },
 ]

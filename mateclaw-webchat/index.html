@@ -64,7 +64,7 @@
   <body>
     <main>
       <h1>MateClaw WebChat Demo</h1>
-      <p>点击右下角按钮打开 WebChat。本页面会模拟流式接口，方便本地预览组件交互。</p>
+      <p>Click the button in the lower-right corner to open WebChat. This page simulates a streaming API for local interaction testing.</p>
     </main>
 
     <script type="module">
@@ -82,8 +82,8 @@
             new ReadableStream({
               start(controller) {
                 const chunks = [
-                  `data: ${JSON.stringify({ text: `收到：${body.message || ''}` })}\n\n`,
-                  `data: ${JSON.stringify({ text: '\\n这是本地 demo 的模拟流式回复。' })}\n\n`,
+                  `data: ${JSON.stringify({ text: `Received: ${body.message || ''}` })}\n\n`,
+                  `data: ${JSON.stringify({ text: '\\nThis is a simulated streaming response from the local demo.' })}\n\n`,
                   'event: done\n\n',
                 ]
 
@@ -110,9 +110,9 @@
         server: location.origin,
         title: 'MateClaw WebChat',
         primaryColor: 'var(--mc-primary, #D97757)',
-        subtitle: '本地预览',
-        welcomeMessage: '我是 MateClaw WebChat，本页面用于本地开发预览。',
-        quickPrompts: ['分析这个问题', '给我执行建议', '你能做哪些事情？'],
+        subtitle: 'Local preview',
+        welcomeMessage: 'I am MateClaw WebChat. This page is a local development preview.',
+        quickPrompts: ['Analyze this problem', 'Give me actionable advice', 'What can you do?'],
       })
     </script>
   </body>

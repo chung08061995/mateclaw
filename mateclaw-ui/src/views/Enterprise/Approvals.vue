@@ -57,7 +57,7 @@
         <div class="sla-card">
           <div class="sla-value">2.4h</div>
           <div class="sla-label">{{ t('enterprise.approvals.slaAvg') }}</div>
-          <div class="sla-delta good">-18% vs 上周</div>
+          <div class="sla-delta good">-18% vs last week</div>
         </div>
         <div class="sla-card">
           <div class="sla-value">96%</div>
@@ -107,21 +107,21 @@ interface Item {
 }
 
 const items: Item[] = [
-  { id: '1', kind: 'contract', risk: 'high', title: 'Acme MSA 续约审批',
-    requester: '李法务', target: 'Acme Corp (买方)', reason: '赔偿条款偏离 Playbook',
-    evidence: 'AI 已审：3 条偏离 · Legal Playbook v3.1', sla: 'SLA 4h 内', mine: true },
-  { id: '2', kind: 'tool', risk: 'high', title: 'web_search 调用授权',
-    requester: '销售情报员 Agent', target: 'Acme Corp 公司信息抓取', reason: '触发金融行业敏感关键词',
-    evidence: '工具守卫规则 R-082 · 历史误报率 < 2%', sla: 'SLA 1h 内', mine: true },
-  { id: '3', kind: 'transformation', risk: 'medium', title: '风险点提取 transformation 批量应用',
-    requester: '王法务', target: '37 份新增合同', reason: '批量任务超过 10 份阈值',
-    evidence: '历史成功率 94% · 单次平均耗时 23s', sla: 'SLA 2h 内', mine: true },
-  { id: '4', kind: 'access', risk: 'low', title: 'BlueWave KB 读取权限',
-    requester: '新员工 周明', target: 'BlueWave 客户库（含 PII）', reason: '团队入职流程',
-    evidence: '入职单 #2026-0421 · 主管 王经理已 OK', sla: 'SLA 1d 内', mine: false },
-  { id: '5', kind: 'contract', risk: 'medium', title: 'FinChen NDA 审批',
-    requester: '李法务', target: 'FinChen 金融', reason: '仲裁地条款',
-    evidence: 'AI 已审：1 条偏离', sla: 'SLA 8h 内', mine: false },
+  { id: '1', kind: 'contract', risk: 'high', title: 'Acme MSA renewal approval',
+    requester: 'Laura Chen', target: 'Acme Corp (buyer)', reason: 'Indemnity clause deviates from the Playbook',
+    evidence: 'AI reviewed: 3 deviations · Legal Playbook v3.1', sla: 'Within 4h SLA', mine: true },
+  { id: '2', kind: 'tool', risk: 'high', title: 'Authorize web_search call',
+    requester: 'Sales Intelligence Agent', target: 'Acme Corp company research', reason: 'Financial-industry sensitive keyword triggered',
+    evidence: 'Tool Guard rule R-082 · Historical false-positive rate < 2%', sla: 'Within 1h SLA', mine: true },
+  { id: '3', kind: 'transformation', risk: 'medium', title: 'Apply risk-extraction transformation in bulk',
+    requester: 'William Reed', target: '37 new contracts', reason: 'Batch exceeds the 10-document threshold',
+    evidence: 'Historical success rate 94% · Average duration 23s', sla: 'Within 2h SLA', mine: true },
+  { id: '4', kind: 'access', risk: 'low', title: 'BlueWave knowledge-base read access',
+    requester: 'New employee Alex Morgan', target: 'BlueWave customer repository (contains PII)', reason: 'Team onboarding process',
+    evidence: 'Onboarding request #2026-0421 · Manager approved', sla: 'Within 1d SLA', mine: false },
+  { id: '5', kind: 'contract', risk: 'medium', title: 'FinChen NDA approval',
+    requester: 'Laura Chen', target: 'FinChen Financial', reason: 'Arbitration venue clause',
+    evidence: 'AI reviewed: 1 deviation', sla: 'Within 8h SLA', mine: false },
 ]
 
 const filteredItems = computed(() => {

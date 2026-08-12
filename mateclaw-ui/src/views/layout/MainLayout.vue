@@ -133,20 +133,6 @@
               </div>
             </div>
 
-            <div class="compact-utility-row">
-              <span class="compact-utility-title">{{ t('nav.languageLabel') }}</span>
-              <div class="language-toggle-row language-toggle-row--compact">
-                <button
-                  v-for="opt in localeOptions"
-                  :key="opt.value"
-                  class="language-btn language-btn--compact"
-                  :class="{ active: currentLocaleValue === opt.value }"
-                  @click="changeLocale(opt.value)"
-                >
-                  <span class="language-abbr">{{ opt.short }}</span>
-                </button>
-              </div>
-            </div>
           </div>
 
           <div class="user-info">
@@ -228,7 +214,7 @@ import { useI18n } from 'vue-i18n'
 import { useThemeStore } from '@/stores/useThemeStore'
 import { version as appVersion } from '../../../package.json'
 import type { ThemeMode } from '@/stores/useThemeStore'
-import { http, settingsApi, setupApi, approvalApi } from '@/api/index'
+import { http, setupApi, approvalApi } from '@/api/index'
 import type { ActiveGrantsSummary } from '@/types'
 import OnboardingWizard from '@/views/Onboarding/OnboardingWizard.vue'
 import DoctorDrawer from '@/views/Doctor/DoctorDrawer.vue'
@@ -237,7 +223,6 @@ import NavBadge from '@/components/common/NavBadge.vue'
 import McTooltip from '@/components/common/McTooltip.vue'
 import { useNotificationCenter } from '@/composables/useNotificationCenter'
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore'
-import { applyLocale, currentLocale, type AppLocale } from '@/i18n'
 import { SwitchButton, Lock, Unlock } from '@element-plus/icons-vue'
 import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 
@@ -398,7 +383,6 @@ const userInitial = computed(() => username.value.charAt(0).toUpperCase())
 const roleLabel = computed(() => role.value === 'admin' ? t('nav.roleAdmin') : t('nav.roleUser'))
 const effectiveCollapsed = computed(() => sidebarCollapsed.value && !isMobile.value)
 const sidebarToggleLabel = computed(() => sidebarCollapsed.value ? t('common.expandSidebar') : t('common.collapseSidebar'))
-const currentLocaleValue = computed(() => currentLocale.value)
 
 const themeOptions = computed<{ value: ThemeMode; label: string; icon: string }[]>(() => [
   {
@@ -418,10 +402,6 @@ const themeOptions = computed<{ value: ThemeMode; label: string; icon: string }[
   },
 ])
 
-const localeOptions = computed<{ value: AppLocale; label: string; short: string }[]>(() => [
-  { value: 'zh-CN', label: t('settings.languageOptions.zhCN'), short: '中' },
-  { value: 'en-US', label: t('settings.languageOptions.enUS'), short: 'EN' },
-])
 
 // Capability-gated nav. Each item declares a capability or globalAdmin flag;
 // useWorkspaceStore.can() decides visibility from the backend access set so
@@ -599,16 +579,6 @@ function logout() {
   // 刷新页面而非 router.push：确保 keepAlive 缓存的 ChatConsole、
   // 模块级变量（cachedAgents 等）全部清空，杜绝跨用户数据泄漏。
   window.location.href = '/login'
-}
-
-async function changeLocale(locale: AppLocale) {
-  await applyLocale(locale)
-  footerPanelOpen.value = false
-  try {
-    await settingsApi.update({ language: locale })
-  } catch {
-    // keep local preference even if backend persistence fails
-  }
 }
 
 watch(() => route.fullPath, () => {

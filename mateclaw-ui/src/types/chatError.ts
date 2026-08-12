@@ -119,8 +119,8 @@ const ERROR_TEXT_PATTERNS: Array<{ pattern: RegExp; category: ChatErrorCategory;
 ]
 
 export function reconstructErrorInfo(text: string): ChatErrorInfo | null {
-  if (!text || !text.startsWith('[错误]')) return null
-  const rawMessage = text.replace(/^\[错误]\s*/, '')
+  if (!text || !/^\[(?:Error|错误)]/.test(text)) return null
+  const rawMessage = text.replace(/^\[(?:Error|错误)]\s*/, '')
   for (const { pattern, category, retryable } of ERROR_TEXT_PATTERNS) {
     if (pattern.test(rawMessage)) {
       return { category, rawMessage, retryable, timestamp: 0 }

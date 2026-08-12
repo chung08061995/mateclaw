@@ -38,11 +38,11 @@ export interface ApprovalResult {
 function titleFor(kind: ApprovalKind): string {
   switch (kind) {
     case 'write_file':
-      return '允许写入本地文件？'
+      return 'Allow writing to a local file?'
     case 'edit_file':
-      return '允许修改本地文件？'
+      return 'Allow editing a local file?'
     case 'execute_shell':
-      return '允许执行本地命令？'
+      return 'Allow running a local command?'
   }
 }
 
@@ -55,11 +55,11 @@ export async function requestApproval(req: ApprovalRequest): Promise<ApprovalRes
     type: 'warning' as const,
     title: titleFor(req.kind),
     message: titleFor(req.kind),
-    detail: `${req.detail}\n\n该操作由远程 Agent 发起，将在你的本机执行。`,
-    buttons: ['拒绝', '允许'],
+    detail: `${req.detail}\n\nA remote agent requested this operation. It will run on your computer.`,
+    buttons: ['Deny', 'Allow'],
     defaultId: 0,
     cancelId: 0,
-    checkboxLabel: '本次会话不再询问相同操作',
+    checkboxLabel: "Don't ask again for matching operations in this session",
     checkboxChecked: false,
     noLink: true,
   }

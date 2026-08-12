@@ -22,12 +22,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * Loads seed data after Flyway migrations on every startup.
  * <p>
- * For data.sql (seed data with locale-specific content):
+ * For data.sql (English seed data):
  * <ul>
  *   <li><b>Web/dev mode</b> (default, {@code mateclaw.setup.await-language-selection=false}):
- *       auto-initializes immediately with {@code mateclaw.setup.default-locale} (zh-CN).</li>
+ *       auto-initializes immediately with {@code mateclaw.setup.default-locale} (en-US).</li>
  *   <li><b>Desktop mode</b> ({@code mateclaw.setup.await-language-selection=true}):
- *       defers until the user selects a language via {@code POST /api/v1/setup/init}.</li>
+ *       defers until the desktop calls {@code POST /api/v1/setup/init}.</li>
  * </ul>
  */
 @Slf4j
@@ -60,7 +60,7 @@ public class DatabaseBootstrapRunner implements ApplicationRunner {
     private boolean awaitLanguageSelection;
 
     /** Default locale for auto-initialization. */
-    @Value("${mateclaw.setup.default-locale:zh-CN}")
+    @Value("${mateclaw.setup.default-locale:en-US}")
     private String defaultLocale;
 
     /** Whether the database has been seeded with data (user table has rows). */
@@ -88,7 +88,7 @@ public class DatabaseBootstrapRunner implements ApplicationRunner {
 
         if (awaitLanguageSelection) {
             // Desktop mode: wait for /api/v1/setup/init
-            log.info("Desktop mode: waiting for language selection via /api/v1/setup/init");
+            log.info("Desktop mode: waiting for English setup via /api/v1/setup/init");
         } else {
             // Web/dev mode: auto-initialize immediately
             log.info("Auto-initializing database with default locale: {}", defaultLocale);
@@ -97,9 +97,10 @@ public class DatabaseBootstrapRunner implements ApplicationRunner {
     }
 
     /**
-     * Initialize seed data with the given locale.
+     * Initialize English seed data. The parameter is retained for API
+     * compatibility, but this distribution never loads non-English seeds.
      *
-     * @param locale "zh-CN" or "en-US"
+     * @param locale requested locale; only "en-US" is used
      * @return true if initialization was performed, false if already initialized or in progress
      */
     public boolean initWithLocale(String locale) {
@@ -119,21 +120,21 @@ public class DatabaseBootstrapRunner implements ApplicationRunner {
             }
             String scriptName;
             if (isMySQL()) {
-                scriptName = "en-US".equals(locale) ? "db/data-mysql-en.sql" : "db/data-mysql-zh.sql";
+                scriptName = "db/data-mysql-en.sql";
             } else if (isKingbase() || isPostgres()) {
                 // PostgreSQL-family seed (covers both PostgreSQL and KingbaseES,
                 // which share the same ON CONFLICT / SERIAL-free DDL dialect).
-                scriptName = "en-US".equals(locale) ? "db/data-kingbase-en.sql" : "db/data-kingbase-zh.sql";
+                scriptName = "db/data-kingbase-en.sql";
             } else {
-                scriptName = "en-US".equals(locale) ? "db/data-en.sql" : "db/data-zh.sql";
+                scriptName = "db/data-en.sql";
             }
-            log.info("Initializing database with locale={} using {}", locale, scriptName);
+            log.info("Initializing database with locale=en-US using {}", scriptName);
             runScript(scriptName);
             initialized = true;
             log.info("Database initialization completed successfully");
             return true;
         } catch (Exception e) {
-            log.error("Failed to initialize database with locale={}", locale, e);
+            log.error("Failed to initialize database with locale=en-US", e);
             throw new RuntimeException("Database initialization failed", e);
         } finally {
             initInProgress.set(false);

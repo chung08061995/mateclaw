@@ -52,21 +52,21 @@ export function kbInitial(kb: { name?: string }): string {
   return (ch || '?').toUpperCase()
 }
 
-export function relativeTime(iso: string | null | undefined, isZh: boolean): string {
+export function relativeTime(iso: string | null | undefined): string {
   if (!iso) return ''
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''
   const diffMs = Date.now() - then
   const sec = Math.floor(diffMs / 1000)
-  if (sec < 60) return isZh ? '刚刚' : 'just now'
+  if (sec < 60) return 'just now'
   const min = Math.floor(sec / 60)
-  if (min < 60) return isZh ? `${min} 分钟前` : `${min}m ago`
+  if (min < 60) return `${min}m ago`
   const hr = Math.floor(min / 60)
-  if (hr < 24) return isZh ? `${hr} 小时前` : `${hr}h ago`
+  if (hr < 24) return `${hr}h ago`
   const day = Math.floor(hr / 24)
-  if (day < 30) return isZh ? `${day} 天前` : `${day}d ago`
+  if (day < 30) return `${day}d ago`
   const mon = Math.floor(day / 30)
-  if (mon < 12) return isZh ? `${mon} 个月前` : `${mon}mo ago`
+  if (mon < 12) return `${mon}mo ago`
   const yr = Math.floor(day / 365)
-  return isZh ? `${yr} 年前` : `${yr}y ago`
+  return `${yr}y ago`
 }

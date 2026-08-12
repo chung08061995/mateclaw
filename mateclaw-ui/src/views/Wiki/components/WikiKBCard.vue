@@ -91,7 +91,7 @@ defineEmits<{
   (e: 'delete', kb: WikiKB): void
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const workspace = useWorkspaceStore()
 
 // Deleting a knowledge base requires manage:wiki; hide it from read-only viewers.
@@ -103,7 +103,7 @@ const iconStyle = computed(() => ({
   background: kbAccent(props.kb),
   color: kbAccentFg(props.kb),
 }))
-const relative = computed(() => relativeTime(props.kb.updateTime, locale.value.startsWith('zh')))
+const relative = computed(() => relativeTime(props.kb.updateTime))
 </script>
 
 <style scoped>

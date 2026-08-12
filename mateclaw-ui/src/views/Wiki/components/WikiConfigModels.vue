@@ -32,28 +32,28 @@
             <!-- Priority hint -->
             <div class="models-hint">
               <span class="hint-chain">
-                <span class="hint-node hint-node--dim">系统全局</span>
+                <span class="hint-node hint-node--dim">System default</span>
                 <span class="hint-arrow">→</span>
-                <span class="hint-node" :class="wikiGlobalModelId ? 'hint-node--wiki' : 'hint-node--dim'">Wiki 全局</span>
+                <span class="hint-node" :class="wikiGlobalModelId ? 'hint-node--wiki' : 'hint-node--dim'">Wiki default</span>
                 <span class="hint-arrow">→</span>
-                <span class="hint-node hint-node--step">步骤绑定</span>
+                <span class="hint-node hint-node--step">Step override</span>
               </span>
-              <span class="hint-desc">优先级从左到右递增，留空则沿用上一级</span>
+              <span class="hint-desc">Priority increases from left to right; empty values inherit from the previous level</span>
             </div>
 
             <!-- ① Wiki global model -->
             <div class="models-section">
               <div class="models-section__title">
-                Wiki 全局模型
-                <span v-if="wikiGlobalModelId" class="section-badge section-badge--on">已设置</span>
-                <span v-else class="section-badge">未设置</span>
+                Wiki default model
+                <span v-if="wikiGlobalModelId" class="section-badge section-badge--on">Set</span>
+                <span v-else class="section-badge">Not set</span>
                 <button
                   v-if="wikiGlobalModelId"
                   class="section-clear"
                   @click="emit('update:wikiGlobalModelId', '')"
-                >清除</button>
+                >Clear</button>
               </div>
-              <div class="models-section__hint">为此知识库所有 Wiki 步骤统一指定专属模型，优先于系统全局默认</div>
+              <div class="models-section__hint">Choose one model for all wiki steps in this knowledge base, overriding the system default</div>
               <ModelSelector
                 :providers="providers"
                 :active-value="configIdToValue.get(wikiGlobalModelId) || ''"
@@ -65,8 +65,8 @@
 
             <!-- ② Step models -->
             <div class="models-section">
-              <div class="models-section__title">按步骤绑定</div>
-              <div class="models-section__hint">针对单个步骤覆盖上方全局设置，最精细的控制层</div>
+              <div class="models-section__title">Per-step overrides</div>
+              <div class="models-section__hint">Override the wiki default for individual steps</div>
               <div class="step-grid">
                 <div v-for="step in stepKeys" :key="step" class="step-row">
                   <div class="step-row__label">
@@ -87,7 +87,7 @@
             <!-- ③ Fallback -->
             <div class="models-section">
               <div class="models-section__title">{{ t('wiki.configPanel.fallbackModels') }}</div>
-              <div class="models-section__hint">主模型失败时按顺序尝试备选，最多 3 个</div>
+              <div class="models-section__hint">Try up to three fallback models in order if the primary model fails</div>
               <div class="fallback-list">
                 <span v-for="(fId, idx) in fallbackModelIds" :key="idx" class="fallback-tag">
                   <span>{{ configIdToLabel(fId) }}</span>
@@ -146,16 +146,16 @@ const emit = defineEmits<{
 const stepDefaultLabel = computed(() => {
   if (props.wikiGlobalModelId) {
     const name = props.configIdToLabel(props.wikiGlobalModelId)
-    return name ? `跟随 Wiki 全局 (${name})` : '跟随 Wiki 全局'
+    return name ? `Use Wiki default (${name})` : 'Use Wiki default'
   }
-  return '跟随全局默认'
+  return 'Use system default'
 })
 
 // Providers list with a "default" entry prepended for step pickers
 const providersWithDefault = computed<ProviderInfo[]>(() => {
   const defaultProvider = {
     id: '__default__',
-    name: '默认',
+    name: 'Default',
     available: true,
     isLocal: false,
     models: [{ id: '', name: stepDefaultLabel.value }],

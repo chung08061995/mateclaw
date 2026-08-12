@@ -12,11 +12,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import en from 'element-plus/es/locale/lang/en'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import { currentLocale } from '@/i18n'
 import { useThemeStore } from '@/stores/useThemeStore'
 import { useSystemSettingsStore } from '@/stores/useSystemSettingsStore'
 import { useGlobalWikilinkClick } from '@/composables/useGlobalWikilinkClick'
@@ -49,5 +47,5 @@ watchEffect(() => {
   document.title = t('app.title')
 })
 
-const elementLocale = computed(() => (currentLocale.value === 'en-US' ? en : zhCn))
+const elementLocale = en
 </script>

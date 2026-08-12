@@ -67,7 +67,7 @@
           <li v-for="e in recentEvidence" :key="e.id" class="evidence-item">
             <div class="evidence-marker" :class="`evidence-${e.kind}`"></div>
             <div class="evidence-body">
-              <div class="evidence-quote">「{{ e.quote }}」</div>
+              <div class="evidence-quote">“{{ e.quote }}”</div>
               <div class="evidence-meta">
                 <span>{{ e.source }}</span>
                 <span class="dot"></span>
@@ -137,20 +137,20 @@ interface QueueItem {
 }
 
 const queue: QueueItem[] = [
-  { id: 'msa-acme-2026q2', title: 'Acme Corp - MSA 续约（赔偿条款异常）', type: '合同审查', owner: '李法务', eta: '今天', risk: 'high', status: 'ai_reviewed' },
-  { id: 'nda-vendora',     title: 'Vendor A NDA - 非常规竞业条款',     type: '合同审查', owner: '王法务', eta: '今天', risk: 'high', status: 'pending_legal' },
-  { id: 'signal-acme-jd',  title: 'Acme 招了新 CTO，10 月 14 日',     type: '情报信号', owner: '张销售', eta: '6 小时前', risk: 'low', status: 'signal' },
-  { id: 'q2-vendor-cmp',   title: 'Q2 供应商条款横向对比',             type: '合同对比', owner: '李法务', eta: '昨天', risk: 'medium', status: 'ai_reviewed' },
-  { id: 'msa-bayer-renew', title: 'Bayer MSA - 自动续约条款偏离 playbook', type: '合同审查', owner: '王法务', eta: '昨天', risk: 'medium', status: 'ai_reviewed' },
-  { id: 'signal-zerto-pr', title: 'Zerto 发布与我们竞品的新版本',       type: '情报信号', owner: '张销售', eta: '昨天', risk: 'low', status: 'signal' },
-  { id: 'nda-finchen',     title: 'FinChen NDA - 仲裁地条款',           type: '合同审查', owner: '李法务', eta: '前天', risk: 'low', status: 'approved' },
+  { id: 'msa-acme-2026q2', title: 'Acme Corp - MSA renewal (indemnity exception)', type: 'Contract review', owner: 'Laura Chen', eta: 'Today', risk: 'high', status: 'ai_reviewed' },
+  { id: 'nda-vendora',     title: 'Vendor A NDA - non-standard non-compete', type: 'Contract review', owner: 'William Reed', eta: 'Today', risk: 'high', status: 'pending_legal' },
+  { id: 'signal-acme-jd',  title: 'Acme hired a new CTO on October 14', type: 'Account signal', owner: 'Sarah Jones', eta: '6 hours ago', risk: 'low', status: 'signal' },
+  { id: 'q2-vendor-cmp',   title: 'Q2 vendor terms comparison', type: 'Contract comparison', owner: 'Laura Chen', eta: 'Yesterday', risk: 'medium', status: 'ai_reviewed' },
+  { id: 'msa-bayer-renew', title: 'Bayer MSA - auto-renewal deviates from playbook', type: 'Contract review', owner: 'William Reed', eta: 'Yesterday', risk: 'medium', status: 'ai_reviewed' },
+  { id: 'signal-zerto-pr', title: 'Zerto released a new competing product version', type: 'Account signal', owner: 'Sarah Jones', eta: 'Yesterday', risk: 'low', status: 'signal' },
+  { id: 'nda-finchen',     title: 'FinChen NDA - arbitration venue clause', type: 'Contract review', owner: 'Laura Chen', eta: '2 days ago', risk: 'low', status: 'approved' },
 ]
 
 const filteredQueue = computed(() => {
   switch (activeFilter.value) {
     case 'high': return queue.filter(q => q.risk === 'high')
     case 'pending': return queue.filter(q => q.status === 'pending_legal' || q.status === 'ai_reviewed')
-    case 'today': return queue.filter(q => q.eta === '今天' || q.eta.includes('小时'))
+    case 'today': return queue.filter(q => q.eta === 'Today' || q.eta.includes('hours'))
     default: return queue
   }
 })
@@ -176,14 +176,14 @@ function statusLabel(s: QueueItem['status']): string {
 
 interface Evidence { id: string; quote: string; source: string; age: string; kind: 'playbook' | 'precedent' | 'source' }
 const recentEvidence: Evidence[] = [
-  { id: 'e1', quote: '本协议双方因履行本协议发生的争议，应当先行协商解决',
-    source: 'Acme MSA · 第 8.2 条 · 第 14 页', age: '12 分钟前', kind: 'source' },
-  { id: 'e2', quote: '我司标准合同要求对方承担因数据泄露产生的全部直接和间接损失',
-    source: 'Legal Playbook · 数据保护条款 v3.1', age: '今天 09:42', kind: 'playbook' },
-  { id: 'e3', quote: '类似案件 2025-06 与 Zerto 谈判，最终采用阶梯式赔偿上限',
-    source: '历史合同 · Zerto MSA 2025', age: '今天 09:12', kind: 'precedent' },
-  { id: 'e4', quote: 'Acme 在 LinkedIn 上招聘 Privacy Counsel，1 个职位',
-    source: 'LinkedIn 信号 · 10 月 14 日', age: '6 小时前', kind: 'source' },
+  { id: 'e1', quote: 'Any dispute arising from performance of this agreement must first be resolved through good-faith negotiation.',
+    source: 'Acme MSA · Clause 8.2 · Page 14', age: '12 minutes ago', kind: 'source' },
+  { id: 'e2', quote: 'Our standard contract requires a capped liability and expressly excludes indirect and punitive damages.',
+    source: 'Legal Playbook · Data protection v3.1', age: 'Today, 09:42', kind: 'playbook' },
+  { id: 'e3', quote: 'The 2025 Zerto negotiation concluded with a tiered liability cap.',
+    source: 'Historical contract · Zerto MSA 2025', age: 'Today, 09:12', kind: 'precedent' },
+  { id: 'e4', quote: 'Acme is recruiting one Privacy Counsel on LinkedIn.',
+    source: 'LinkedIn signal · October 14', age: '6 hours ago', kind: 'source' },
 ]
 
 const pipeline = [

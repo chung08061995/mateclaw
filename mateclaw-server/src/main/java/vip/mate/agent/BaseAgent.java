@@ -556,7 +556,8 @@ public abstract class BaseAgent {
         // Both providers' 400 then re-persist a fresh "[错误] " row, repeat.
         if ("assistant".equals(entity.getRole())
                 && ("error".equals(entity.getStatus())
-                        || (entity.getContent() != null && entity.getContent().startsWith("[错误] ")))) {
+                        || (entity.getContent() != null && (entity.getContent().startsWith("[Error] ")
+                                || entity.getContent().startsWith("[错误] "))))) {
             log.debug("[{}] Filtering error assistant message from history: msgId={} status={}",
                     agentName, entity.getId(), entity.getStatus());
             return null;
@@ -664,7 +665,8 @@ public abstract class BaseAgent {
         if ("assistant".equals(role)
                 && ("error".equals(entity.getStatus())
                         || (entity.getContent() != null
-                                && entity.getContent().startsWith("[错误] ")))) return true;
+                                && (entity.getContent().startsWith("[Error] ")
+                                || entity.getContent().startsWith("[错误] "))))) return true;
         return false;
     }
 

@@ -38,7 +38,7 @@ public class ChannelErrorClassifier {
         if (reply == null || reply.isBlank()) {
             return false;
         }
-        return reply.startsWith("[错误] ")
+        return reply.startsWith("[Error] ") || reply.startsWith("[错误] ")
                 || reply.contains("Bad request:")
                 || reply.contains("LLM 调用失败:")
                 || reply.contains("LLM 调用超时")

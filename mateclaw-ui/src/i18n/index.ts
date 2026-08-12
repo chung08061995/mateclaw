@@ -3,10 +3,10 @@ import { compileToFunction, registerMessageCompiler } from '@intlify/core-base'
 import { ref } from 'vue'
 import { settingsApi } from '@/api'
 
-export type AppLocale = 'zh-CN' | 'en-US'
+export type AppLocale = 'en-US'
 
 const STORAGE_KEY = 'mateclaw_locale'
-const DEFAULT_LOCALE: AppLocale = 'zh-CN'
+const DEFAULT_LOCALE: AppLocale = 'en-US'
 
 export const currentLocale = ref<AppLocale>(DEFAULT_LOCALE)
 
@@ -38,23 +38,18 @@ export const i18n = createI18n({
 
 const loadedLocales = new Set<AppLocale>()
 
-// Each locale dictionary is ~78KB. Splitting them into their own chunks keeps
-// the entry bundle ~150KB lighter — only the active locale is fetched on cold
-// start, the other one only when the user switches language.
+// This distribution is intentionally English-only. Keep the loader async so
+// the initial bundle remains small and the existing initialization contract
+// does not change.
 async function loadLocaleMessages(locale: AppLocale) {
   if (loadedLocales.has(locale)) return
-  const messages = locale === 'zh-CN'
-    ? (await import('./locales/zh-CN')).default
-    : (await import('./locales/en-US')).default
+  const messages = (await import('./locales/en-US')).default
   i18n.global.setLocaleMessage(locale, messages)
   loadedLocales.add(locale)
 }
 
-function normalizeLocale(locale?: string | null): AppLocale {
-  if (locale === 'en' || locale === 'en-US') {
-    return 'en-US'
-  }
-  return 'zh-CN'
+function normalizeLocale(_locale?: string | null): AppLocale {
+  return 'en-US'
 }
 
 export async function applyLocale(locale?: string | null) {

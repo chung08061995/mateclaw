@@ -207,8 +207,8 @@ async function startJavaBackend(): Promise<void> {
   if (!existsSync(javaExec)) {
     console.error(`[MateClaw] Java executable not found: ${javaExec}`)
     dialog.showErrorBox(
-      'MateClaw 启动失败',
-      `找不到 Java 运行时环境。\n路径: ${javaExec}\n\n请重新安装 MateClaw。`
+      'MateClaw failed to start',
+      `The Java runtime could not be found.\nPath: ${javaExec}\n\nPlease reinstall MateClaw.`
     )
     app.quit()
     return
@@ -217,8 +217,8 @@ async function startJavaBackend(): Promise<void> {
   if (!existsSync(jarPath)) {
     console.error(`[MateClaw] JAR not found: ${jarPath}`)
     dialog.showErrorBox(
-      'MateClaw 启动失败',
-      `找不到应用程序包。\n路径: ${jarPath}\n\n请重新安装 MateClaw。`
+      'MateClaw failed to start',
+      `The application package could not be found.\nPath: ${jarPath}\n\nPlease reinstall MateClaw.`
     )
     app.quit()
     return
@@ -255,7 +255,7 @@ async function startJavaBackend(): Promise<void> {
 
   javaProcess.on('error', (err: Error) => {
     console.error('[MateClaw] Failed to start Java process:', err)
-    sendToWindow('backend:crashed', `Java 进程启动失败: ${err.message}`)
+    sendToWindow('backend:crashed', `The Java process failed to start: ${err.message}`)
   })
 
   javaProcess.on('exit', (code: number | null, signal: string | null) => {
@@ -263,7 +263,7 @@ async function startJavaBackend(): Promise<void> {
     javaProcess = null
 
     if (!isQuitting) {
-      sendToWindow('backend:crashed', `Java 进程意外退出 (code: ${code})`)
+      sendToWindow('backend:crashed', `The Java process exited unexpectedly (code: ${code})`)
     }
   })
 
@@ -290,17 +290,15 @@ function pollBackendReady(): void {
       sendToWindow('backend:status', 'timeout')
       if (connectionMode !== 'remote') {
         dialog.showErrorBox(
-          'MateClaw 启动超时',
-          '后端服务启动超时，请检查日志或重启应用。'
+          'MateClaw startup timed out',
+          'The backend service took too long to start. Check the logs or restart the application.'
         )
       }
       return
     }
 
     const isHttps = BACKEND_URL.startsWith('https:')
-    const client = isHttps ? https : http
-    const reqOpts = isHttps ? { agent: insecureAgent } : {}
-    const req = client.get(`${BACKEND_URL}/`, reqOpts, (res) => {
+    const onResponse = (res: http.IncomingMessage) => {
       if (resolved) return
       resolved = true
 
@@ -319,7 +317,10 @@ function pollBackendReady(): void {
 
       // Do NOT auto-navigate — let the splash screen handle it
       // after language selection / setup check completes.
-    })
+    }
+    const req = isHttps
+      ? https.get(`${BACKEND_URL}/`, { agent: insecureAgent }, onResponse)
+      : http.get(`${BACKEND_URL}/`, onResponse)
 
     req.on('error', () => {
       if (resolved) return
@@ -401,7 +402,7 @@ async function bootConnection(): Promise<void> {
 function startRemoteConnection(url: string): void {
   const normalized = normalizeServerUrl(url)
   if (!normalized) {
-    sendToWindow('backend:crashed', `无效的服务器地址: ${url}`)
+    sendToWindow('backend:crashed', `Invalid server address: ${url}`)
     return
   }
   connectionMode = 'remote'
@@ -428,16 +429,17 @@ function probeServer(
     }
 
     const isHttps = normalized.startsWith('https:')
-    const client = isHttps ? https : http
-    const reqOpts = isHttps ? { agent: insecureAgent } : {}
-    const req = client.get(`${normalized}/`, reqOpts, (res) => {
+    const onResponse = (res: http.IncomingMessage) => {
       res.resume()
       const status = res.statusCode ?? 0
       // Any non-5xx response means the server is reachable and serving.
       resolve({ ok: status > 0 && status < 500, status })
-    })
+    }
+    const req = isHttps
+      ? https.get(`${normalized}/`, { agent: insecureAgent }, onResponse)
+      : http.get(`${normalized}/`, onResponse)
 
-    req.on('error', (err) => resolve({ ok: false, error: err.message }))
+    req.on('error', (err: Error) => resolve({ ok: false, error: err.message }))
     req.setTimeout(timeoutMs, () => {
       req.destroy()
       resolve({ ok: false, error: 'timeout' })
@@ -512,7 +514,7 @@ function createWindow(): void {
         overrideBrowserWindowOptions: {
           width: 500,
           height: 620,
-          title: '企业微信授权',
+          title: 'WeCom authorization',
           webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -674,7 +676,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle('connection:use-local', async () => {
     // Remote builds have no bundled JRE/JAR — reject the local mode request.
     if (BUILD_MODE === 'remote') {
-      sendToWindow('backend:crashed', '此版本为轻量版（Remote），不支持本地内嵌后端。请选择连接远程服务器。')
+      sendToWindow('backend:crashed', 'This lightweight remote build does not include a local backend. Connect to a remote server instead.')
       return
     }
     forceChooser = false
@@ -845,25 +847,25 @@ async function showLocalToolsSettings(): Promise<void> {
   const cfg = loadLocalToolsConfig()
   const dirs = cfg.allowedDirs.length > 0
     ? cfg.allowedDirs.map((d) => `  • ${d}`).join('\n')
-    : `  （未配置 — ${cfg.failClosed ? '默认拒绝所有本地访问' : '默认允许全部本地访问'}）`
+    : `  (Not configured — ${cfg.failClosed ? 'deny all local access by default' : 'allow all local access by default'})`
   const detail = [
-    `状态: ${cfg.enabled ? '已启用' : '已停用'}`,
-    `隧道: ${localBridge.isConnected() ? '已连接' : '未连接'}`,
+    `Status: ${cfg.enabled ? 'Enabled' : 'Disabled'}`,
+    `Tunnel: ${localBridge.isConnected() ? 'Connected' : 'Disconnected'}`,
     '',
-    '允许访问的目录:',
+    'Allowed directories:',
     dirs,
   ].join('\n')
 
   const parent = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined
   const hasDirs = cfg.allowedDirs.length > 0
   const buttons = hasDirs
-    ? ['关闭', '添加目录…', '移除目录…', cfg.enabled ? '停用' : '启用']
-    : ['关闭', '添加目录…', cfg.enabled ? '停用' : '启用']
+    ? ['Close', 'Add directory…', 'Remove directory…', cfg.enabled ? 'Disable' : 'Enable']
+    : ['Close', 'Add directory…', cfg.enabled ? 'Disable' : 'Enable']
   const toggleId = buttons.length - 1
   const opts = {
     type: 'info' as const,
-    title: '本地工具设置',
-    message: '本地文件/命令工具',
+    title: 'Local tool settings',
+    message: 'Local file and command tools',
     detail,
     buttons,
     defaultId: 0,
@@ -891,10 +893,10 @@ async function pickDirectoryToRemove(dirs: string[]): Promise<void> {
   const parent = mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined
   const opts = {
     type: 'question' as const,
-    title: '移除目录',
-    message: '选择要从白名单移除的目录',
-    detail: '移除后，本地文件/命令工具将无法再访问该目录。',
-    buttons: ['取消', ...dirs],
+    title: 'Remove a directory',
+    message: 'Choose a directory to remove from the allowlist',
+    detail: 'After removal, local file and command tools will no longer be able to access this directory.',
+    buttons: ['Cancel', ...dirs],
     defaultId: 0,
     cancelId: 0,
     noLink: true,
@@ -950,7 +952,7 @@ function setupApplicationMenu(): void {
         { label: 'Check for Updates...', click: menuCheckForUpdates },
         { type: 'separator' },
         { label: 'Switch Server…', click: goToConnectionChooser },
-        { label: '本地工具设置…', click: () => { void showLocalToolsSettings() } },
+        { label: 'Local Tool Settings…', click: () => { void showLocalToolsSettings() } },
         { type: 'separator' },
         { role: 'hide' },
         { role: 'hideOthers' },
@@ -967,7 +969,7 @@ function setupApplicationMenu(): void {
       label: 'File',
       submenu: [
         { label: 'Switch Server…', click: goToConnectionChooser },
-        { label: '本地工具设置…', click: () => { void showLocalToolsSettings() } },
+        { label: 'Local Tool Settings…', click: () => { void showLocalToolsSettings() } },
         { type: 'separator' },
         { role: 'quit', label: 'Exit' },
       ],
@@ -1069,10 +1071,10 @@ app.on('certificate-error', (event, _webContents, url, _error, _certificate, cal
 
   const choice = dialog.showMessageBoxSync({
     type: 'warning',
-    title: '证书不受信任',
-    message: `服务器 ${host} 使用了不受信任的证书`,
-    detail: '该服务器的 TLS 证书无法验证（可能是自签名证书）。仅在你信任此服务器时继续。',
-    buttons: ['取消', '信任并继续'],
+    title: 'Untrusted certificate',
+    message: `Server ${host} uses an untrusted certificate`,
+    detail: 'The server TLS certificate could not be verified and may be self-signed. Continue only if you trust this server.',
+    buttons: ['Cancel', 'Trust and continue'],
     defaultId: 0,
     cancelId: 0,
   })

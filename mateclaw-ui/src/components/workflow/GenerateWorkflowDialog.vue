@@ -366,10 +366,6 @@ function onAccept() {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-:lang(zh-CN) .picker-label {
-  text-transform: none;
-  letter-spacing: 0;
-}
 .picker-select {
   padding: 7px 9px;
   border: 1px solid var(--mc-border);

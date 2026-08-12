@@ -959,7 +959,7 @@ public class NodeStreamingChatHelper {
                     fallback.getClass().getSimpleName(), conversationId);
             if (broadcast) {
                 broadcastDelta(conversationId, "warning",
-                        buildDeltaJson("主模型不可用，正在切换到备选模型 (" + (i + 1) + "/" + fallbackChain.size() + ")..."));
+                        buildDeltaJson("The primary model is unavailable. Switching to fallback " + (i + 1) + "/" + fallbackChain.size() + "..."));
             }
             failoverCount++;
             llmCallCount++;
@@ -995,7 +995,7 @@ public class NodeStreamingChatHelper {
 
         logPerfSummary(phase, conversationId, callStartMs, llmCallCount, retryCount, failoverCount);
         return lastResult != null ? lastResult
-                : buildErrorResult("LLM 调用失败，已达最大重试次数", conversationId, phase);
+                : buildErrorResult("The LLM call failed after the maximum number of retries", conversationId, phase);
     }
 
     /** D-6: log a structured performance summary for the LLM call phase. */
@@ -1534,7 +1534,7 @@ public class NodeStreamingChatHelper {
                         log.debug("context-limit observer failed: {}", observerError.getMessage());
                     }
                 }
-                return buildErrorResultWithType("Prompt 过长: " + extractUserFriendlyError(error),
+                return buildErrorResultWithType("Prompt too long: " + extractUserFriendlyError(error),
                         conversationId, phase, errorType);
             }
 
@@ -1555,9 +1555,9 @@ public class NodeStreamingChatHelper {
             // type-appropriate user-facing prefix.
             String friendly = extractUserFriendlyError(error);
             String message = switch (errorType) {
-                case AUTH_ERROR -> "认证失败: " + friendly;
+                case AUTH_ERROR -> "Authentication failed: " + friendly;
                 case CLIENT_ERROR -> "Bad request: " + friendly;
-                default -> "LLM 调用失败: " + friendly;
+                default -> "LLM call failed: " + friendly;
             };
             log.error("[{}] LLM call failed (type={}) after {} attempts for conversation {}: {}",
                     phase, errorType, attempt + 1, conversationId, error.getMessage());
@@ -1893,8 +1893,8 @@ public class NodeStreamingChatHelper {
             broadcastDelta(conversationId, "warning",
                     buildDeltaJson(errorMsg));
         }
-        AssistantMessage errorMessage = new AssistantMessage("[错误] " + errorMsg);
-        return new StreamResult("[错误] " + errorMsg, "", errorMessage,
+        AssistantMessage errorMessage = new AssistantMessage("[Error] " + errorMsg);
+        return new StreamResult("[Error] " + errorMsg, "", errorMessage,
                 List.of(), false, 0, 0, false, errorMsg, ErrorType.UNKNOWN);
     }
 
@@ -1909,8 +1909,8 @@ public class NodeStreamingChatHelper {
             String errorJson = buildErrorEventJson(errorMsg, conversationId, errorType);
             streamTracker.broadcast(conversationId, "error", errorJson);
         }
-        AssistantMessage errorMessage = new AssistantMessage("[错误] " + errorMsg);
-        return new StreamResult("[错误] " + errorMsg, "", errorMessage,
+        AssistantMessage errorMessage = new AssistantMessage("[Error] " + errorMsg);
+        return new StreamResult("[Error] " + errorMsg, "", errorMessage,
                 List.of(), false, 0, 0, false, errorMsg, errorType);
     }
 
@@ -1983,28 +1983,28 @@ public class NodeStreamingChatHelper {
         //   "<model> does not support tools"
         // 这不是模型坏，而是用户选错了模型 —— 给出可操作的切换建议。
         if (bodySample.contains("does not support tools") || msg.contains("does not support tools")) {
-            return "当前模型不支持工具调用（function calling）。请在 设置 → 模型 里切换到支持 tools 的模型，"
-                    + "例如 qwen3、qwen2.5:7b+、llama3.1:8b+、mistral-nemo、command-r 等。";
+            return "The selected model does not support tool calling. Switch to a tool-capable model in Settings → Models, "
+                    + "such as qwen3, qwen2.5:7b+, llama3.1:8b+, mistral-nemo, or command-r.";
         }
 
         // Volcano Engine Ark — model exists but the user's account hasn't activated it.
         // Body shape: {"error":{"code":"ModelNotOpen","message":"Your account ... has not activated the model X. Please activate the model service in the Ark Console..."}}
         if (combined.contains("ModelNotOpen")) {
             String modelId = extractArkModelName(combined);
-            String suffix = modelId != null ? "「" + modelId + "」" : "";
-            return "火山方舟（Volcano Ark）尚未为该账号开通模型" + suffix
-                    + "。请前往 Ark 控制台 → 模型广场，对该模型点击「开通服务」后重试。"
-                    + "（控制台：https://console.volcengine.com/ark）";
+            String suffix = modelId != null ? " '" + modelId + "'" : "";
+            return "Volcano Ark has not activated model" + suffix
+                    + " for this account. Activate it in the Ark console model catalog and retry: "
+                    + "https://console.volcengine.com/ark";
         }
 
         // Volcano Engine Ark — model id doesn't exist for the user's region/key.
         // Body shape: {"error":{"code":"InvalidEndpointOrModel.NotFound","message":"The model or endpoint X does not exist or you do not have access to it..."}}
         if (combined.contains("InvalidEndpointOrModel")) {
             String modelId = extractArkModelName(combined);
-            String suffix = modelId != null ? "「" + modelId + "」" : "";
-            return "火山方舟（Volcano Ark）找不到模型" + suffix
-                    + "。原因可能是模型 ID 不在当前区域，或你的账号没有访问权限。"
-                    + "建议在 设置 → 模型 里点「刷新模型」重新发现，或在 Ark 控制台创建「推理接入点」(ep-XXX) 后使用该 ID。";
+            String suffix = modelId != null ? " '" + modelId + "'" : "";
+            return "Volcano Ark could not find model" + suffix
+                    + ". The model may not exist in this region or the account may lack access. "
+                    + "Refresh models in Settings → Models, or create an inference endpoint (ep-XXX) in the Ark console.";
         }
 
         // DashScope "url error" is really "model name not mapped to any valid endpoint".

@@ -19,7 +19,7 @@ import java.util.Map;
  * Setup API for first-run initialization.
  * <p>
  * Called by the Desktop splash screen to initialize the database
- * with the user's chosen language before navigating to the main UI.
+     * with the English locale before navigating to the main UI.
  * These endpoints require no authentication.
  */
 @Slf4j
@@ -44,20 +44,21 @@ public class SetupController {
     }
 
     /**
-     * Initialize the application with the chosen language.
-     * This seeds the database with locale-specific data (agents, tools, descriptions).
+     * Initialize the English-only application.
+     * This seeds the database with English data (agents, tools, descriptions).
      *
-     * @param request { "language": "zh-CN" | "en-US" }
+     * @param request { "language": "en-US" }
      * @return success or conflict
      */
     @PostMapping("/init")
     public R<String> init(@RequestBody InitRequest request) {
         String language = request.getLanguage();
         if (language == null || language.isBlank()) {
-            language = "zh-CN";
+            language = "en-US";
         }
-        if (!"zh-CN".equals(language) && !"en-US".equals(language)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported language: " + language);
+        if (!"en-US".equals(language)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "This English-only build supports en-US only");
         }
 
         boolean success = bootstrapRunner.initWithLocale(language);

@@ -217,7 +217,7 @@ import SkillIcon from '@/components/common/SkillIcon.vue'
 import SkillIconPicker from '@/components/common/SkillIconPicker.vue'
 import WizardCapabilityPicker from '@/components/agent/WizardCapabilityPicker.vue'
 
-const { t, tm, locale } = useI18n()
+const { t, tm } = useI18n()
 const router = useRouter()
 
 type Step = 'describe' | 'confirm' | 'success'
@@ -261,8 +261,7 @@ const exampleList = computed<string[]>(() => {
 })
 
 function skillName(s: any): string {
-  if (locale.value === 'zh-CN' && s.nameZh) return s.nameZh
-  if (locale.value !== 'zh-CN' && s.nameEn) return s.nameEn
+  if (s.nameEn) return s.nameEn
   return s.name
 }
 

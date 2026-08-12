@@ -56,39 +56,39 @@ const scopeFilters = computed<{ key: ScopeKey; label: string }[]>(() => [
 interface Event { id: string; time: string; date: string; kind: 'review' | 'approve' | 'reject' | 'tool' | 'access' | 'modify' | 'agent'; actor: string; system?: string; summary: string; evidence?: string }
 
 const events: Event[] = [
-  { id: '1', time: '11:24', date: '今天', kind: 'approve', actor: '法务总监 张律师', system: 'Acme MSA 续约',
-    summary: '批准 Acme Corp MSA v3.2 续约（赔偿条款已修正为 12 个月服务费上限）',
-    evidence: '关联运行：run #4 · 合同审查 case#msa-acme-2026q2 · 偏离 playbook 项已全部解决' },
-  { id: '2', time: '11:18', date: '今天', kind: 'modify', actor: '李法务', system: 'Acme MSA 续约',
-    summary: '修改第 8.2 条赔偿条款，采纳 AI 建议（阶梯式上限）',
-    evidence: 'AI 建议引用：Zerto MSA 2025 案例 · Playbook v3.1 第 4.2 节' },
-  { id: '3', time: '10:42', date: '今天', kind: 'review', actor: 'AI 法务审查员', system: 'Acme MSA 续约',
-    summary: '完成条款级审查（3 条偏离，1 高 / 1 中 / 1 低）',
-    evidence: '模型：Claude Sonnet 4.6 · 输入：Acme MSA v3.2.pdf 14 页 · 耗时 47s · token 12,830 / 3,210' },
-  { id: '4', time: '10:30', date: '今天', kind: 'tool', actor: '销售情报员 Agent', system: 'Acme Corp 账户',
-    summary: '调用 web_search 抓取 Acme 季报，提取上云战略关键句',
-    evidence: '工具守卫批准 #T-2026-114 · 数据驻留：中国大陆' },
-  { id: '5', time: '09:15', date: '今天', kind: 'agent', actor: '法务审查员 Agent', system: 'Vendor A NDA',
-    summary: '识别 NDA 第 5.1 条非常规竞业条款（5 年），自动发起改写沟通邮件草稿',
-    evidence: 'Playbook 规则：NDA 禁止竞业条款 · 1 次工具调用：draft_email_template' },
-  { id: '6', time: '08:30', date: '今天', kind: 'review', actor: 'AI 法务审查员', system: 'Vendor A NDA',
-    summary: '完成审查（1 条高风险）',
-    evidence: '模型：Claude Sonnet 4.6 · 输入：vendor-a-nda-v1.pdf 4 页 · 耗时 18s' },
-  { id: '7', time: '16:00', date: '昨天', kind: 'review', actor: 'AI 合同对比员', system: 'Q2 供应商对比',
-    summary: '生成 5 家供应商横向对比报告，识别 3 处显著条款差异',
-    evidence: '输入：5 份合同 · 输出 page#vendor-comparison-q2 · 耗时 2m 14s' },
-  { id: '8', time: '15:42', date: '昨天', kind: 'access', actor: '周明', system: 'BlueWave 客户库',
-    summary: '请求 BlueWave 客户库读取权限',
-    evidence: '审批单：access #A-2026-0419 · 主管已批准' },
-  { id: '9', time: '14:20', date: '昨天', kind: 'reject', actor: '王法务', system: 'FinChen NDA v0.9',
-    summary: '驳回 FinChen NDA v0.9，要求重新修订仲裁地条款',
-    evidence: 'AI 已审：3 条偏离 · 驳回理由：仲裁地不能为对方注册地' },
+  { id: '1', time: '11:24', date: 'Today', kind: 'approve', actor: 'Daniel Smith, Legal Director', system: 'Acme MSA renewal',
+    summary: 'Approved the Acme Corp MSA v3.2 renewal after capping indemnity at 12 months of service fees.',
+    evidence: 'Related run #4 · Contract review case#msa-acme-2026q2 · All playbook deviations resolved' },
+  { id: '2', time: '11:18', date: 'Today', kind: 'modify', actor: 'Laura Chen', system: 'Acme MSA renewal',
+    summary: 'Updated Clause 8.2 indemnity using the AI-recommended tiered cap.',
+    evidence: 'AI recommendation cites Zerto MSA 2025 · Playbook v3.1 Section 4.2' },
+  { id: '3', time: '10:42', date: 'Today', kind: 'review', actor: 'AI Legal Reviewer', system: 'Acme MSA renewal',
+    summary: 'Completed clause-level review: 3 deviations (1 high, 1 medium, 1 low).',
+    evidence: 'Model: Claude Sonnet 4.6 · Input: Acme MSA v3.2.pdf, 14 pages · Duration: 47s · Tokens: 12,830 / 3,210' },
+  { id: '4', time: '10:30', date: 'Today', kind: 'tool', actor: 'Sales Intelligence Agent', system: 'Acme Corp account',
+    summary: 'Used web_search to retrieve Acme’s quarterly report and extract its cloud strategy.',
+    evidence: 'Tool Guard approval #T-2026-114 · Data residency: United States' },
+  { id: '5', time: '09:15', date: 'Today', kind: 'agent', actor: 'Legal Reviewer Agent', system: 'Vendor A NDA',
+    summary: 'Found a non-standard five-year non-compete in Clause 5.1 and drafted a revision request.',
+    evidence: 'Playbook rule: NDAs must not contain non-competes · Tool call: draft_email_template' },
+  { id: '6', time: '08:30', date: 'Today', kind: 'review', actor: 'AI Legal Reviewer', system: 'Vendor A NDA',
+    summary: 'Completed review with one high-risk finding.',
+    evidence: 'Model: Claude Sonnet 4.6 · Input: vendor-a-nda-v1.pdf, 4 pages · Duration: 18s' },
+  { id: '7', time: '16:00', date: 'Yesterday', kind: 'review', actor: 'AI Contract Analyst', system: 'Q2 vendor comparison',
+    summary: 'Generated a five-vendor comparison and identified three material differences.',
+    evidence: 'Input: 5 contracts · Output: page#vendor-comparison-q2 · Duration: 2m 14s' },
+  { id: '8', time: '15:42', date: 'Yesterday', kind: 'access', actor: 'Alex Morgan', system: 'BlueWave customer repository',
+    summary: 'Requested read access to the BlueWave customer repository.',
+    evidence: 'Approval request access #A-2026-0419 · Manager approved' },
+  { id: '9', time: '14:20', date: 'Yesterday', kind: 'reject', actor: 'William Reed', system: 'FinChen NDA v0.9',
+    summary: 'Rejected FinChen NDA v0.9 and requested a revised arbitration venue clause.',
+    evidence: 'AI reviewed: 3 deviations · Rejection reason: venue cannot default to the counterparty’s jurisdiction' },
 ]
 
 const filteredEvents = computed(() => {
   switch (scope.value) {
-    case 'contract': return events.filter(e => e.system?.includes('MSA') || e.system?.includes('NDA') || e.system?.includes('对比'))
-    case 'account': return events.filter(e => e.system?.includes('Corp') || e.system?.includes('客户库') || e.system?.includes('账户'))
+    case 'contract': return events.filter(e => e.system?.includes('MSA') || e.system?.includes('NDA') || e.system?.includes('comparison'))
+    case 'account': return events.filter(e => e.system?.includes('Corp') || e.system?.includes('repository') || e.system?.includes('account'))
     case 'tool': return events.filter(e => e.kind === 'tool' || e.kind === 'agent')
     default: return events
   }

@@ -200,8 +200,8 @@
                 <SkillIcon :value="tpl.icon" :size="28" :fallback="'🧑‍💼'" />
               </div>
               <div class="template-info">
-                <h4 class="template-name">{{ $i18n.locale === 'zh-CN' && tpl.nameZh ? tpl.nameZh : tpl.name }}</h4>
-                <p class="template-detail">{{ $i18n.locale === 'zh-CN' && tpl.descriptionZh ? tpl.descriptionZh : tpl.description }}</p>
+                <h4 class="template-name">{{ tpl.name }}</h4>
+                <p class="template-detail">{{ tpl.description }}</p>
               </div>
               <div class="template-tags">
                 <span v-for="tag in (tpl.tags || '').split(',').filter(Boolean)" :key="tag" class="tag-chip">{{ tag.trim() }}</span>

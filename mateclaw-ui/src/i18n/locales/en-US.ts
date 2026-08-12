@@ -615,7 +615,7 @@ export default {
   },
   contentCalendar: {
     title: 'Content Calendar',
-    subtitle: 'Ledger of produced 公众号 / 小红书 pieces — what is packaged, published, or pending upload (auto-recorded on delivery).',
+    subtitle: 'Ledger of produced official-account and social posts — what is packaged, published, or pending upload (auto-recorded on delivery).',
     total: 'All',
     packaged: 'Packaged',
     draft: 'Draft',
@@ -3977,7 +3977,7 @@ export default {
     },
     placeholders: {
       name: 'Skill name',
-      nameZh: '可选 — 留空则显示原始 name',
+      nameZh: 'Optional legacy localized name — leave blank to display the original name',
       nameEn: 'Optional — leave blank to show the slug',
       icon: '🛠️ (emoji or URL)',
       version: '1.0.0',
@@ -4464,7 +4464,7 @@ export default {
       skipped: 'Nothing to consolidate',
     },
   },
-  // Tool display labels consumed by useToolLabel() — keys must mirror zh-CN.ts exactly.
+  // Tool display labels consumed by useToolLabel().
   // Unknown tools (MCP / custom skills) fall back to humanizeToolName() and are not listed here.
   toolLabels: {
     // Delegation

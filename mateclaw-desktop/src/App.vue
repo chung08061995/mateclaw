@@ -4,10 +4,9 @@ import { version } from '../package.json'
 
 const appVersion = version
 
-const status = ref<'starting' | 'ready' | 'language-select' | 'initializing' | 'timeout' | 'crashed' | 'restarting' | 'connection-select'>('starting')
+const status = ref<'starting' | 'ready' | 'initializing' | 'timeout' | 'crashed' | 'restarting' | 'connection-select'>('starting')
 const errorMessage = ref('')
 const isDark = ref(true)
-const selectedLanguage = ref<'zh-CN' | 'en-US' | null>(null)
 
 // ─── Connection chooser state ──────────────────────────
 const connectionMode = ref<'local' | 'remote' | null>(null)
@@ -49,7 +48,6 @@ const currentStep = computed(() => {
   switch (status.value) {
     case 'starting':        return 1
     case 'restarting':      return 0
-    case 'language-select': return 2
     case 'initializing':    return 2
     case 'ready':           return 4
     case 'timeout':
@@ -62,7 +60,6 @@ const progressWidth = computed(() => {
   if (status.value === 'crashed' || status.value === 'timeout') return '100%'
   if (status.value === 'ready') return '100%'
   if (status.value === 'restarting') return '15%'
-  if (status.value === 'language-select') return '60%'
   if (status.value === 'initializing') return '80%'
   return '45%'
 })
@@ -70,7 +67,7 @@ const progressWidth = computed(() => {
 const steps = [
   { label: 'Environment' },
   { label: 'Starting' },
-  { label: 'Language' },
+  { label: 'Setup' },
   { label: 'Ready' },
 ]
 
@@ -94,25 +91,24 @@ async function checkSetupStatus() {
       status.value = 'ready'
       navigateToApp()
     } else {
-      // First run — show language selection
-      status.value = 'language-select'
+      // English-only build: initialize immediately with the bundled locale.
+      await initializeEnglish()
     }
   } catch (e) {
     console.error('Failed to check setup status:', e)
-    // If API fails, default to language selection
-    status.value = 'language-select'
+    errorMessage.value = e instanceof Error ? e.message : 'Unable to check setup status'
+    status.value = 'crashed'
   }
 }
 
-async function selectLanguage(lang: 'zh-CN' | 'en-US') {
-  selectedLanguage.value = lang
+async function initializeEnglish() {
   status.value = 'initializing'
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/v1/setup/init`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ language: lang }),
+      body: JSON.stringify({ language: 'en-US' }),
     })
 
     if (res.ok || res.status === 409) {
@@ -173,9 +169,9 @@ function backToChoose() {
 
 function describeConnError(r: { error?: string }): string {
   switch (r.error) {
-    case 'invalid-url': return '地址格式无效'
-    case 'timeout':     return '连接超时，请检查地址与网络'
-    default:            return r.error ? `连接失败: ${r.error}` : '连接失败'
+    case 'invalid-url': return 'Invalid server address'
+    case 'timeout':     return 'Connection timed out. Check the address and network.'
+    default:            return r.error ? `Connection failed: ${r.error}` : 'Connection failed'
   }
 }
 
@@ -186,7 +182,7 @@ async function testRemote() {
   try {
     const r = await window.mateClawAPI.testConnection(remoteUrlInput.value)
     testResult.value = r.ok
-      ? { ok: true, msg: '连接成功' }
+      ? { ok: true, msg: 'Connection successful' }
       : { ok: false, msg: describeConnError(r) }
   } finally {
     testing.value = false
@@ -339,7 +335,7 @@ function createParticles() {
       >
         <!-- Mode choice -->
         <template v-if="connView === 'choose'">
-          <div class="lang-title">选择连接方式 / Connection</div>
+          <div class="lang-title">Choose a connection</div>
           <div class="lang-options">
             <button
               v-if="buildMode === 'local'"
@@ -347,24 +343,24 @@ function createParticles() {
               @click="chooseLocal"
             >
               <span class="lang-flag">💻</span>
-              <span class="lang-label">本地运行</span>
-              <span class="lang-desc">在本机内嵌运行服务</span>
+              <span class="lang-label">Run locally</span>
+              <span class="lang-desc">Use the server bundled on this Mac</span>
             </button>
             <button class="lang-card" @click="openRemoteForm">
               <span class="lang-flag">🌐</span>
-              <span class="lang-label">连接远程</span>
-              <span class="lang-desc">接入集中部署的服务器</span>
+              <span class="lang-label">Connect remotely</span>
+              <span class="lang-desc">Use a centrally deployed MateClaw server</span>
             </button>
           </div>
           <!-- Remote (lite) build notice -->
           <div v-if="buildMode === 'remote'" class="remote-build-notice">
-            当前为轻量版客户端，仅支持连接远程服务器
+            This lightweight client connects to remote servers only.
           </div>
         </template>
 
         <!-- Remote server form -->
         <template v-else>
-          <div class="lang-title">连接远程服务器</div>
+          <div class="lang-title">Connect to a remote server</div>
           <div class="conn-form">
             <input
               class="conn-input"
@@ -383,7 +379,7 @@ function createParticles() {
               {{ testResult.msg }}
             </div>
             <div v-if="recentServers.length" class="conn-recent">
-              <div class="conn-recent-title">最近使用</div>
+              <div class="conn-recent-title">Recently used</div>
               <button
                 v-for="s in recentServers"
                 :key="s.url"
@@ -392,58 +388,20 @@ function createParticles() {
               >{{ s.url }}</button>
             </div>
             <div class="conn-actions">
-              <button class="conn-btn ghost" @click="backToChoose">返回</button>
+              <button class="conn-btn ghost" @click="backToChoose">Back</button>
               <button
                 class="conn-btn ghost"
                 :disabled="testing || !remoteUrlInput"
                 @click="testRemote"
-              >{{ testing ? '测试中…' : '测试连接' }}</button>
+              >{{ testing ? 'Testing…' : 'Test connection' }}</button>
               <button
                 class="conn-btn primary"
                 :disabled="!remoteUrlInput"
                 @click="connectRemote()"
-              >连接</button>
+              >Connect</button>
             </div>
           </div>
         </template>
-      </div>
-
-      <!-- Language Selection Card -->
-      <div
-        v-else-if="status === 'language-select'"
-        class="status-card fade-enter"
-      >
-        <div class="lang-title">Choose Language / 选择语言</div>
-        <div class="lang-options">
-          <button class="lang-card" @click="selectLanguage('zh-CN')">
-            <span class="lang-flag">🇨🇳</span>
-            <span class="lang-label">中文</span>
-            <span class="lang-desc">简体中文界面</span>
-          </button>
-          <button class="lang-card" @click="selectLanguage('en-US')">
-            <span class="lang-flag">🇺🇸</span>
-            <span class="lang-label">English</span>
-            <span class="lang-desc">English interface</span>
-          </button>
-        </div>
-
-        <!-- Steps (compact) -->
-        <div class="steps" style="margin-top: 8px;">
-          <div
-            v-for="(step, i) in steps"
-            :key="i"
-            class="step"
-            :class="stepClass(i)"
-          >
-            <div class="step-dot">
-              <svg v-if="stepClass(i) === 'done'" width="10" height="10" viewBox="0 0 10 10">
-                <path d="M2 5.2l2.2 2.3L8 3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span v-else class="step-num">{{ i + 1 }}</span>
-            </div>
-            <span class="step-label">{{ step.label }}</span>
-          </div>
-        </div>
       </div>
 
       <!-- Status Card (starting / initializing / ready / error) -->
@@ -508,7 +466,7 @@ function createParticles() {
 
           <template v-else-if="status === 'initializing'">
             <div class="spinner"></div>
-            <span class="status-text">Initializing{{ selectedLanguage === 'zh-CN' ? ' (中文)' : ' (English)' }}...</span>
+            <span class="status-text">Initializing English workspace...</span>
           </template>
 
           <template v-else-if="status === 'ready'">

@@ -512,7 +512,6 @@ defineExpose({ openCreate })
   text-transform: lowercase;
   letter-spacing: 0.02em;
 }
-:lang(zh-CN) .trigger-type-pill { text-transform: none; }
 .trigger-rule-arrow {
   flex: 0 0 auto;
   color: var(--mc-text-tertiary, #b0a89e);
