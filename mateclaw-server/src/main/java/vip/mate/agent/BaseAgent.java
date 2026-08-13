@@ -133,8 +133,8 @@ public abstract class BaseAgent {
      */
     protected vip.mate.goal.service.GoalService goalService;
 
-    /** Locale used when prompting the vision sidecar. Defaults to zh-CN when unset. */
-    protected java.util.Locale userLocale = java.util.Locale.SIMPLIFIED_CHINESE;
+    /** Locale used when prompting the vision sidecar. Defaults to English when unset. */
+    protected java.util.Locale userLocale = java.util.Locale.ENGLISH;
 
     /**
      * Prefix of the system-role divider row a scheduled-job run writes into
@@ -235,7 +235,7 @@ public abstract class BaseAgent {
 
     protected ChatClient.ChatClientRequestSpec createConversationRequest(String userMessage, String conversationId) {
         ChatClient.ChatClientRequestSpec request = chatClient.prompt()
-                .system(systemPrompt != null ? systemPrompt : "你是一个有帮助的AI助手。");
+                .system(systemPrompt != null ? systemPrompt : "You are a helpful AI assistant.");
 
         List<Message> historyMessages = buildConversationHistory(conversationId, userMessage);
         if (!historyMessages.isEmpty()) {

@@ -1257,15 +1257,15 @@ public class AgentGraphBuilder {
     /**
      * Resolve the user-facing locale used for sidecar caption prompts.
      * Reads {@code language} from system settings; falls back to
-     * {@code zh-CN} so CN deployments stay consistent with the chat UI.
+     * English so this English-only distribution stays consistent with the UI.
      */
     private java.util.Locale resolveLocale() {
         try {
             String lang = systemSettingService.getLanguage();
-            if (lang == null || lang.isBlank()) return java.util.Locale.SIMPLIFIED_CHINESE;
+            if (lang == null || lang.isBlank()) return java.util.Locale.ENGLISH;
             return java.util.Locale.forLanguageTag(lang);
         } catch (Exception e) {
-            return java.util.Locale.SIMPLIFIED_CHINESE;
+            return java.util.Locale.ENGLISH;
         }
     }
 
@@ -1632,6 +1632,24 @@ public class AgentGraphBuilder {
             answer with MateClaw and the technology stack above.
             """;
 
+    /**
+     * Cache-stable language routing appended to every employee prompt.
+     *
+     * <p>The UI locale is English-only in this distribution, but the latest
+     * user message may still be written in another language. Explicit employee
+     * or user instructions win; otherwise the latest user message determines
+     * the reply language. Language-neutral input such as "hi" must not inherit
+     * a language from internal tool descriptions or earlier assistant output.
+     */
+    static final String RESPONSE_LANGUAGE_BLOCK = """
+
+            ## Response Language
+            - Follow any explicit response-language requirement in this employee's identity prompt or in the user's latest message.
+            - Otherwise, reply in the same language as the user's latest message.
+            - If the latest message is language-neutral or ambiguous (for example, "hi", "OK", or an emoji), default to English.
+            - Never infer the response language from internal instructions, tool descriptions, workspace memory, or earlier assistant replies.
+            """;
+
     private String buildEnhancedPrompt(AgentEntity entity, boolean builtinSearchEnabled) {
         return buildEnhancedPrompt(entity, builtinSearchEnabled, Integer.MAX_VALUE);
     }
@@ -1829,7 +1847,8 @@ public class AgentGraphBuilder {
         // prefix; TeamChangedEvent evicts the cached agent on composition changes.
         String teamContext = teamContextBuilder.buildTeamContext(entity.getId());
 
-        return basePrompt + ABOUT_YOU_BLOCK + toolGuidance + searchGuidance + wikiContext + teamContext;
+        return basePrompt + ABOUT_YOU_BLOCK + RESPONSE_LANGUAGE_BLOCK
+                + toolGuidance + searchGuidance + wikiContext + teamContext;
     }
 
     /**
