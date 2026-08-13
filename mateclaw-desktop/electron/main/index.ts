@@ -106,6 +106,15 @@ interface UpdaterState {
 
 let updaterState: UpdaterState = { status: 'idle' }
 
+/**
+ * Development snapshots have no stable GitHub Release feed. Asking
+ * electron-updater to check one on every launch only produces a misleading
+ * "Update failed" banner (and can never install a compatible build).
+ */
+function hasReleaseUpdateChannel(version = app.getVersion()): boolean {
+  return !version.toUpperCase().includes('SNAPSHOT')
+}
+
 // ─── Platform Detection & Resource Paths ─────────────────────────────────────
 
 function getResourcesPath(): string {
@@ -554,6 +563,11 @@ function setupAutoUpdater(): void {
     autoUpdater.forceDevUpdateConfig = true
   }
 
+  if (!hasReleaseUpdateChannel()) {
+    console.log(`[MateClaw] Skipping auto-updater for development build ${app.getVersion()}`)
+    return
+  }
+
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = false
 
@@ -752,7 +766,9 @@ function registerIpcHandlers(): void {
   ipcMain.handle('updater:get-state', () => updaterState)
 
   ipcMain.handle('updater:check', async () => {
-    if (!app.isPackaged) return { status: 'not-available' } as UpdaterState
+    if (!app.isPackaged || !hasReleaseUpdateChannel()) {
+      return { status: 'not-available', version: app.getVersion() } as UpdaterState
+    }
     try {
       await autoUpdater.checkForUpdates()
     } catch (err: any) {
@@ -914,6 +930,16 @@ async function pickDirectoryToRemove(dirs: string[]): Promise<void> {
 async function menuCheckForUpdates(): Promise<void> {
   if (!app.isPackaged) {
     dialog.showMessageBox({ type: 'info', message: 'Update check is not available in dev mode.' })
+    return
+  }
+
+  if (!hasReleaseUpdateChannel()) {
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Check for Updates',
+      message: 'Automatic updates are not available for this development build.',
+      detail: `MateClaw ${app.getVersion()} is a custom snapshot. Publish a stable GitHub Release to enable automatic updates.`,
+    })
     return
   }
 

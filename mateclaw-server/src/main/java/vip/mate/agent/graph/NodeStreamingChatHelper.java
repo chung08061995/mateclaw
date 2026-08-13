@@ -1138,11 +1138,12 @@ public class NodeStreamingChatHelper {
             }
             log.warn("[{}] Retry attempt {}/{} after {}ms (prev type={}) for conversation {}",
                     phase, attempt, MAX_RETRIES, delay, retryTypeRef.get(), conversationId);
-            // 广播给前端：用户可见的重试倒计时
+            // Broadcast a user-visible retry countdown to the frontend.
             if (broadcast) {
-                String cause = overloaded ? "模型服务繁忙" : "请求频率受限";
+                String cause = overloaded ? "The model service is busy" : "The request was rate limited";
                 broadcastDelta(conversationId, "warning",
-                        buildDeltaJson("⏱️ " + cause + "，等待 " + (delay / 1000) + " 秒后重试（第 " + attempt + "/" + MAX_RETRIES + " 次）..."));
+                        buildDeltaJson("⏱️ " + cause + "; retrying in " + (delay / 1000)
+                                + " seconds (attempt " + attempt + "/" + MAX_RETRIES + ")..."));
             }
             // Poll stop flag every 100ms so user Stop is honored mid-backoff.
             long remaining = delay;
@@ -1157,7 +1158,7 @@ public class NodeStreamingChatHelper {
                     Thread.sleep(slice);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
-                    return buildErrorResult("LLM 调用被中断", conversationId, phase);
+                    return buildErrorResult("The LLM request was interrupted", conversationId, phase);
                 }
                 remaining -= slice;
             }
@@ -1484,7 +1485,7 @@ public class NodeStreamingChatHelper {
         } catch (InterruptedException e) {
             subscription.dispose();
             Thread.currentThread().interrupt();
-            return buildErrorResult("LLM 调用被中断", conversationId, phase);
+            return buildErrorResult("The LLM request was interrupted", conversationId, phase);
         }
 
         // Stream is over (complete, error, or disposed by a guard) — drain the
