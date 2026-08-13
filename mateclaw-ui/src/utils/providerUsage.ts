@@ -76,6 +76,37 @@ export function clampedQuotaPercent(account: ProviderUsageAccount): number | nul
   return Math.min(100, Math.max(0, account.quotaUsedPercent as number))
 }
 
+function timestamp(value: string | number | null | undefined): number {
+  if (value == null || value === '') return 0
+  const numeric = Number(value)
+  if (Number.isFinite(numeric)) return numeric
+  const parsed = Date.parse(String(value))
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+/**
+ * Pick the best account-level quota snapshot for the active provider.
+ * `active` means "most recently successful in this provider pool", not that
+ * the account necessarily served the conversation currently on screen.
+ */
+export function selectProviderUsageAccount(
+  accounts: ProviderUsageAccount[],
+  providerId: string | null | undefined,
+): ProviderUsageAccount | null {
+  if (!providerId) return null
+
+  const matching = accounts
+    .filter((account) => account.enabled && account.providerId === providerId)
+    .sort((left, right) => {
+      if (left.active !== right.active) return left.active ? -1 : 1
+      const byLastUse = timestamp(right.lastUsedAt) - timestamp(left.lastUsedAt)
+      if (byLastUse !== 0) return byLastUse
+      return left.priority - right.priority
+    })
+
+  return matching[0] || null
+}
+
 export function providerAlertTone(account: ProviderUsageAccount): ProviderAlertTone {
   const alert = (account.alertLevel || account.alertStatus || '').toUpperCase()
   const status = (account.status || '').toUpperCase()

@@ -214,8 +214,13 @@
         :capabilities="agentCapabilities"
       />
 
-      <!-- 上下文占用（估算）：点击展开分项面板 -->
-      <div v-if="contextUsage" class="ctx-usage-row">
+      <!-- Conversation context and provider-account quota are different limits. -->
+      <div v-if="contextUsage || activeProviderAccount" class="ctx-usage-row">
+        <ProviderQuotaChip
+          v-if="activeProviderAccount"
+          :account="activeProviderAccount"
+          @details="router.push('/settings/provider-usage')"
+        />
         <ContextUsagePanel :usage="contextUsage" />
       </div>
 
@@ -283,7 +288,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { mcToast } from '@/composables/useMcToast'
 import { ChatDotRound, Delete, Setting, UploadFilled } from '@element-plus/icons-vue'
-import { conversationApi, agentApi, modelApi, chatApi, cronJobApi, approvalApi } from '@/api/index'
+import { conversationApi, agentApi, modelApi, chatApi, cronJobApi, approvalApi, providerAccountApi } from '@/api/index'
 import { copyToClipboard } from '@/utils/clipboard'
 import { useFileDrop } from '@/composables/useFileDrop'
 import { useIsMobile, useMediaQuery, BREAKPOINTS } from '@/composables/useBreakpoint'
@@ -304,6 +309,7 @@ import ChatInput from '@/components/chat/ChatInput.vue'
 import MultimodalRoutingHint from '@/components/chat/MultimodalRoutingHint.vue'
 import StreamLoadingBar from '@/components/chat/StreamLoadingBar.vue'
 import ContextUsagePanel from '@/components/chat/ContextUsagePanel.vue'
+import ProviderQuotaChip from '@/components/chat/ProviderQuotaChip.vue'
 import TalkMode from '@/components/chat/TalkMode.vue'
 import ModelSelector from '@/components/chat/ModelSelector.vue'
 import { useEChartsRenderer } from '@/composables/useEChartsRenderer'
@@ -312,6 +318,8 @@ import { useMermaidRenderer, handleMermaidDownload } from '@/composables/useMerm
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore'
 import { buildViewerModelProviders } from '@/utils/viewerModelProviders'
+import type { ProviderUsageAccount } from '@/types/providerUsage'
+import { normalizeProviderUsageAccounts, selectProviderUsageAccount } from '@/utils/providerUsage'
 import GoalSetInlinePrompt from '@/components/goal/GoalSetInlinePrompt.vue'
 import GoalSystemLine from '@/components/goal/GoalSystemLine.vue'
 
@@ -779,6 +787,7 @@ const {
         await refreshCurrentConversationMessages(meta.conversationId)
       }
     }
+    await loadProviderQuota()
   },
 })
 
@@ -1206,6 +1215,7 @@ onMounted(async () => {
   startKatex()
   startMermaid()
   await Promise.all([loadAgents(), loadModelState(), loadConversations()])
+  await loadProviderQuota()
   await hydrateStateFromRoute()
   applyPendingRouteAction()
   activityPollTimer = window.setInterval(pollActivity, ACTIVITY_POLL_MS)
@@ -1264,7 +1274,7 @@ onActivated(async () => {
   // agent created/edited/deleted elsewhere (e.g. the Employees page) never
   // reached this component's own `agents` list otherwise, and stayed
   // invisible in the picker until a full page reload forced a fresh mount.
-  await loadAgents()
+  await Promise.all([loadAgents(), loadProviderQuota()])
   activityPollTimer = window.setInterval(pollActivity, ACTIVITY_POLL_MS)
   elapsedTickTimer = window.setInterval(() => {
     if (activeCronRuns.value.length > 0) elapsedNow.value = Date.now()
@@ -1301,6 +1311,46 @@ const goalStore = useGoalStore()
 const workspaceStore = useWorkspaceStore()
 const currentWorkspaceId = computed(() => workspaceStore.currentWorkspaceId ?? '1')
 const canConfigureModels = computed(() => workspaceStore.isGlobalAdmin)
+const providerUsageAccounts = ref<ProviderUsageAccount[]>([])
+const providerQuotaLoading = ref(false)
+const activeProviderAccount = computed(() => selectProviderUsageAccount(
+  providerUsageAccounts.value,
+  activeModels.value?.activeLlm?.providerId,
+))
+
+function responsePayload(response: unknown): unknown {
+  if (!response || typeof response !== 'object') return response
+  const wrapped = response as { data?: unknown }
+  return 'data' in wrapped ? wrapped.data : response
+}
+
+async function loadProviderQuota() {
+  if (!workspaceStore.isGlobalAdmin || providerQuotaLoading.value) {
+    if (!workspaceStore.isGlobalAdmin) providerUsageAccounts.value = []
+    return
+  }
+
+  providerQuotaLoading.value = true
+  try {
+    const response = await providerAccountApi.summary()
+    providerUsageAccounts.value = normalizeProviderUsageAccounts(responsePayload(response))
+  } catch {
+    // Quota is supplementary chat metadata. A restricted or temporarily
+    // unavailable admin endpoint must never interrupt sending a message.
+    providerUsageAccounts.value = []
+  } finally {
+    providerQuotaLoading.value = false
+  }
+}
+
+watch(
+  [() => workspaceStore.isGlobalAdmin, () => activeModels.value?.activeLlm?.providerId],
+  ([isAdmin]) => {
+    if (isAdmin) void loadProviderQuota()
+    else providerUsageAccounts.value = []
+  },
+  { immediate: true },
+)
 const modelSelectorEmptyHint = computed(() => canConfigureModels.value
   ? undefined
   : t('chat.noModelsAvailableContactAdmin'))
@@ -2412,8 +2462,11 @@ function handleCodeCopy(e: MouseEvent) {
 <style scoped>
 .ctx-usage-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  padding: 0 4px 4px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 max(4px, env(safe-area-inset-right)) 4px max(4px, env(safe-area-inset-left));
 }
 .cron-running-bar {
   display: flex;
