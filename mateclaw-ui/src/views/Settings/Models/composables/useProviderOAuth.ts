@@ -126,7 +126,7 @@ export function useProviderOAuth(deps: FormDeps & ListDeps) {
     devicePollTimer = setTimeout(tick, intervalMs)
   }
 
-  async function handleOAuthLogin(providerId?: string) {
+  async function handleOAuthLogin(providerId?: string, preferDeviceCode = false) {
     if (providerId === 'anthropic-claude-code') {
       try {
         const res: any = await claudeCodeOAuthApi.reload()
@@ -139,6 +139,10 @@ export function useProviderOAuth(deps: FormDeps & ListDeps) {
       } catch (e: any) {
         mcToast.error(e.msg || 'Claude Code OAuth detection failed')
       }
+      return
+    }
+    if (preferDeviceCode) {
+      await runDeviceCodeFlow()
       return
     }
     try {

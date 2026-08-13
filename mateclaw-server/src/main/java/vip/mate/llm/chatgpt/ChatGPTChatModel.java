@@ -16,8 +16,10 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import reactor.core.publisher.Flux;
+import org.springframework.http.HttpHeaders;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * ChatGPT 会员模型 — 实现 Spring AI ChatModel 接口。
@@ -30,11 +32,28 @@ public class ChatGPTChatModel implements ChatModel {
     private final ChatGPTResponsesClient client;
     private final String modelName;
     private final Double temperature;
+    private final String accessToken;
+    private final String accountId;
+    private final Consumer<HttpHeaders> responseHeaders;
 
     public ChatGPTChatModel(ChatGPTResponsesClient client, String modelName, Double temperature) {
+        this(client, modelName, temperature, null, null, null);
+    }
+
+    public ChatGPTChatModel(ChatGPTResponsesClient client, String modelName, Double temperature,
+                            String accessToken, String accountId) {
+        this(client, modelName, temperature, accessToken, accountId, null);
+    }
+
+    public ChatGPTChatModel(ChatGPTResponsesClient client, String modelName, Double temperature,
+                            String accessToken, String accountId,
+                            Consumer<HttpHeaders> responseHeaders) {
         this.client = client;
         this.modelName = modelName;
         this.temperature = temperature;
+        this.accessToken = accessToken;
+        this.accountId = accountId;
+        this.responseHeaders = responseHeaders;
     }
 
     @Override
@@ -45,12 +64,20 @@ public class ChatGPTChatModel implements ChatModel {
         List<ToolDefinition> toolDefs = extractToolDefinitions(prompt);
 
         log.debug("[ChatGPT] call: model={}, messages={}, tools={}", model, messages.size(), toolDefs.size());
-        String content = client.call(model, messages, temp, toolDefs);
+        ChatGPTResponsesClient.CallResult result = client.callResult(
+                model, messages, temp, toolDefs, accessToken, accountId, responseHeaders);
 
-        Generation generation = new Generation(new AssistantMessage(content),
+        Generation generation = new Generation(new AssistantMessage(result.content()),
                 ChatGenerationMetadata.builder().finishReason("stop").build());
-        return new ChatResponse(List.of(generation),
-                ChatResponseMetadata.builder().model(model).build());
+        ChatResponseMetadata.Builder metadata = ChatResponseMetadata.builder().model(model);
+        if (result.inputTokens() != null || result.outputTokens() != null
+                || result.totalTokens() != null) {
+            int in = result.inputTokens() == null ? 0 : result.inputTokens();
+            int out = result.outputTokens() == null ? 0 : result.outputTokens();
+            int total = result.totalTokens() == null ? in + out : result.totalTokens();
+            metadata.usage(new DefaultUsage(in, out, total));
+        }
+        return new ChatResponse(List.of(generation), metadata.build());
     }
 
     @Override
@@ -66,7 +93,11 @@ public class ChatGPTChatModel implements ChatModel {
         Map<String, String> toolCallNames = new LinkedHashMap<>();
         Map<String, StringBuilder> toolCallArgs = new LinkedHashMap<>();
 
-        return client.streamEvents(model, messages, temp, toolDefs)
+        Flux<ChatGPTResponsesClient.StreamEvent> events = accessToken == null
+                ? client.streamEvents(model, messages, temp, toolDefs)
+                : client.streamEvents(model, messages, temp, toolDefs, accessToken, accountId,
+                        responseHeaders);
+        return events
                 .mapNotNull(event -> {
                     switch (event.type()) {
                         case "text" -> {

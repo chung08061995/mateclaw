@@ -34,7 +34,7 @@ public class GeminiChatModelBuilder implements ChatModelBuilder {
 
     @Override
     public ChatModel build(ModelConfigEntity model, ModelProviderEntity provider, RetryTemplate retry) {
-        if (provider == null || !modelProviderService.isProviderConfigured(provider.getProviderId())) {
+        if (provider == null) {
             throw new MateClawException("err.agent.gemini_not_configured",
                     "Gemini Provider 未完成配置，请在模型设置中填写有效的 API Key");
         }

@@ -3,8 +3,8 @@ package vip.mate.llm.oauth;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -12,6 +12,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import vip.mate.exception.MateClawException;
 import vip.mate.llm.model.ModelProviderEntity;
+import vip.mate.llm.account.model.ProviderAccountCredentials;
+import vip.mate.llm.account.model.ProviderAccountEntity;
+import vip.mate.llm.account.service.ProviderAccountService;
 import vip.mate.llm.repository.ModelProviderMapper;
 import vip.mate.llm.service.ModelProviderService;
 
@@ -63,7 +66,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class OpenAIOAuthService {
 
     private static final String CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
@@ -79,7 +81,26 @@ public class OpenAIOAuthService {
     private final ModelProviderMapper modelProviderMapper;
     private final ObjectMapper objectMapper;
     private final ModelProviderService modelProviderService;
+    private final ProviderAccountService providerAccountService;
     private final RestClient restClient = RestClient.create();
+
+    @Autowired
+    public OpenAIOAuthService(ModelProviderMapper modelProviderMapper,
+                              ObjectMapper objectMapper,
+                              ModelProviderService modelProviderService,
+                              ProviderAccountService providerAccountService) {
+        this.modelProviderMapper = modelProviderMapper;
+        this.objectMapper = objectMapper;
+        this.modelProviderService = modelProviderService;
+        this.providerAccountService = providerAccountService;
+    }
+
+    /** Compatibility constructor for lightweight tests and embedders. */
+    public OpenAIOAuthService(ModelProviderMapper modelProviderMapper,
+                              ObjectMapper objectMapper,
+                              ModelProviderService modelProviderService) {
+        this(modelProviderMapper, objectMapper, modelProviderService, null);
+    }
 
     /** state → code_verifier 缓存 */
     private final ConcurrentHashMap<String, String> pendingStates = new ConcurrentHashMap<>();
@@ -414,6 +435,47 @@ public class OpenAIOAuthService {
     }
 
     /**
+     * Resolve one pooled OpenAI account and refresh only that account when its
+     * access token is near expiry. The legacy singleton row is deliberately not
+     * touched, so concurrent chats may safely use different OAuth accounts.
+     */
+    public ProviderAccountCredentials ensureValidAccountCredentials(Long accountId) {
+        if (providerAccountService == null) {
+            throw new MateClawException("Provider account service is unavailable");
+        }
+        ProviderAccountEntity account = providerAccountService.getAccount(accountId);
+        if (!PROVIDER_ID.equals(account.getProviderId()) || !"oauth".equals(account.getAuthType())) {
+            throw new MateClawException("Provider account is not an OpenAI OAuth account: " + accountId);
+        }
+
+        ProviderAccountCredentials credentials = providerAccountService.getDecryptedCredentials(accountId);
+        if (!StringUtils.hasText(credentials.accessToken())) {
+            throw new MateClawException("OpenAI OAuth account has no access token: " + accountId);
+        }
+        if (credentials.expiresAt() == null
+                || System.currentTimeMillis() <= credentials.expiresAt() - 300_000) {
+            return credentials;
+        }
+        if (!StringUtils.hasText(credentials.refreshToken())) {
+            throw new MateClawException("OpenAI OAuth account must be signed in again: " + accountId);
+        }
+
+        String body = "grant_type=refresh_token"
+                + "&refresh_token=" + enc(credentials.refreshToken())
+                + "&client_id=" + enc(CLIENT_ID);
+        JsonNode tokenResponse = postTokenRequest(body);
+        String accessToken = tokenResponse.path("access_token").asText(null);
+        String refreshToken = tokenResponse.path("refresh_token").asText(null);
+        int expiresIn = tokenResponse.path("expires_in").asInt(3600);
+        if (!StringUtils.hasText(accessToken)) {
+            throw new MateClawException("OpenAI OAuth refresh response has no access token");
+        }
+        providerAccountService.refreshOAuthAccountCredentials(accountId, accessToken,
+                refreshToken, System.currentTimeMillis() + (long) expiresIn * 1000);
+        return providerAccountService.getDecryptedCredentials(accountId);
+    }
+
+    /**
      * 获取 account_id（用于请求 header）
      */
     public String getAccountId() {
@@ -496,6 +558,13 @@ public class OpenAIOAuthService {
             provider.setOauthAccountId(accountId);
         }
         modelProviderMapper.updateById(provider);
+        String labelSuffix = StringUtils.hasText(accountId)
+                ? accountId.substring(Math.max(0, accountId.length() - 8)) : "account";
+        if (providerAccountService != null) {
+            providerAccountService.upsertOAuthAccount(PROVIDER_ID, "OpenAI " + labelSuffix,
+                    accountId, accessToken, refreshToken,
+                    System.currentTimeMillis() + (long) expiresIn * 1000);
+        }
         modelProviderService.activateFirstModelIfDefaultUnavailable(PROVIDER_ID);
         log.info("OpenAI OAuth token 已保存，expires_in={}s, accountId={}", expiresIn, accountId);
     }

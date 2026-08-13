@@ -92,6 +92,12 @@ const sections = computed(() => [
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
   },
   {
+    id: 'provider-usage',
+    path: '/settings/provider-usage',
+    label: t('nav.providerUsage'),
+    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/><circle cx="18" cy="6" r="3"/><path d="m16.8 6 0.8.8L19.5 5"/></svg>',
+  },
+  {
     id: 'system',
     path: '/settings/system',
     label: t('settings.sections.system'),
@@ -382,5 +388,13 @@ function isActive(path: string) {
   .nav-collapse-btn { display: none; }
   .settings-content { min-height: 0; overflow: visible; }
   .settings-content__inner { overflow: visible; padding-right: 0; }
+}
+
+@media (max-width: 480px) {
+  .settings-layout { gap: 8px; }
+  .settings-nav,
+  .settings-nav.nav-collapsed { width: 48px; min-width: 48px; padding: 10px 5px; }
+  .settings-nav .nav-item { min-height: 42px; padding: 9px 6px; }
+  .settings-content { padding: 10px; }
 }
 </style>

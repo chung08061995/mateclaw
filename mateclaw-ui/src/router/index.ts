@@ -144,6 +144,12 @@ const router = createRouter({
               meta: { title: 'Settings - Models', requiredCapability: 'manage:models' },
             },
             {
+              path: 'provider-usage',
+              name: 'SettingsProviderUsage',
+              component: () => import('@/views/Settings/ProviderUsage.vue'),
+              meta: { title: 'Settings - Provider Usage', requiredCapability: 'manage:models' },
+            },
+            {
               path: 'system',
               name: 'SettingsSystem',
               component: () => import('@/views/Settings/System/index.vue'),

@@ -536,11 +536,6 @@ public class NodeStreamingChatHelper {
                 || msg.contains("当前分组上游负载已饱和")) { // SiliconFlow group saturation
             return ErrorType.OVERLOADED;
         }
-        // Rate limit
-        if (msg.contains("429") || msg.contains("rate_limit") || msg.contains("RateLimitError")
-                || msg.contains("Too Many Requests")) {
-            return ErrorType.RATE_LIMIT;
-        }
         // Thinking block errors (Anthropic: old thinking blocks cannot be modified)
         if (msg.contains("thinking blocks cannot be modified")
                 || msg.contains("thinking content is not allowed")
@@ -563,6 +558,15 @@ public class NodeStreamingChatHelper {
                 || msg.contains("AccountBalanceNotEnough")
                 || msg.contains("balance not enough")) {
             return ErrorType.BILLING;
+        }
+        // Rate limit. This must stay after the quota/billing patterns because
+        // OpenAI commonly transports insufficient_quota in an HTTP 429 body;
+        // classifying on status first would cool the account briefly instead
+        // of marking its quota exhausted and rotating to the next account.
+        if (msg.contains("429") || msg.contains("rate_limit") || msg.contains("RateLimitError")
+                || msg.contains("provider_account_pool_unavailable")
+                || msg.contains("Too Many Requests")) {
+            return ErrorType.RATE_LIMIT;
         }
         // RFC-009 P3.2: MODEL_NOT_FOUND — provider rejects the requested model id.
         // DashScope signals an unknown/unsupported model id specifically as

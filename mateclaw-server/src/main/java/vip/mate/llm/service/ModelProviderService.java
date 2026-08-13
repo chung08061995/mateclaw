@@ -3,13 +3,14 @@ package vip.mate.llm.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vip.mate.exception.MateClawException;
 import vip.mate.llm.anthropic.oauth.ClaudeCodeOAuthService;
+import vip.mate.llm.account.service.ProviderAccountService;
 import vip.mate.llm.event.ModelConfigChangedEvent;
 import vip.mate.llm.failover.AvailableProviderPool;
 import vip.mate.llm.failover.ProviderHealthTracker;
@@ -27,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ModelProviderService {
 
     /** Provider id whose OAuth token lives on local disk (Keychain / ~/.claude/.credentials.json) instead of the database. */
@@ -53,6 +53,8 @@ public class ModelProviderService {
     private final ApplicationEventPublisher eventPublisher;
     /** Lazy provider — avoids forcing the bean to exist in test contexts that don't load the anthropic package. */
     private final ObjectProvider<ClaudeCodeOAuthService> claudeCodeOAuthServiceProvider;
+    /** Account pool is lazy so legacy/lightweight test contexts remain viable. */
+    private final ObjectProvider<ProviderAccountService> providerAccountServiceProvider;
     /** RFC-073: pool / cooldown / probe-completion signals that drive {@link Liveness}. */
     private final AvailableProviderPool providerPool;
     private final ProviderHealthTracker providerHealthTracker;
@@ -70,6 +72,45 @@ public class ModelProviderService {
 
     /** Plugin-registered ChatModel instances: providerId -> ChatModel */
     private final Map<String, ChatModel> pluginChatModels = new ConcurrentHashMap<>();
+
+    @Autowired
+    public ModelProviderService(ModelProviderMapper modelProviderMapper,
+                                ModelConfigService modelConfigService,
+                                ApplicationEventPublisher eventPublisher,
+                                ObjectProvider<ClaudeCodeOAuthService> claudeCodeOAuthServiceProvider,
+                                ObjectProvider<ProviderAccountService> providerAccountServiceProvider,
+                                AvailableProviderPool providerPool,
+                                ProviderHealthTracker providerHealthTracker,
+                                ObjectProvider<ProviderInitProbe> providerInitProbeProvider,
+                                ModelContextWindowResolver contextWindowResolver,
+                                ConversationWindowProperties conversationWindowProperties) {
+        this.modelProviderMapper = modelProviderMapper;
+        this.modelConfigService = modelConfigService;
+        this.eventPublisher = eventPublisher;
+        this.claudeCodeOAuthServiceProvider = claudeCodeOAuthServiceProvider;
+        this.providerAccountServiceProvider = providerAccountServiceProvider;
+        this.providerPool = providerPool;
+        this.providerHealthTracker = providerHealthTracker;
+        this.providerInitProbeProvider = providerInitProbeProvider;
+        this.contextWindowResolver = contextWindowResolver;
+        this.conversationWindowProperties = conversationWindowProperties;
+    }
+
+    /** Compatibility constructor for lightweight tests and embedders. */
+    public ModelProviderService(ModelProviderMapper modelProviderMapper,
+                                ModelConfigService modelConfigService,
+                                ApplicationEventPublisher eventPublisher,
+                                ObjectProvider<ClaudeCodeOAuthService> claudeCodeOAuthServiceProvider,
+                                AvailableProviderPool providerPool,
+                                ProviderHealthTracker providerHealthTracker,
+                                ObjectProvider<ProviderInitProbe> providerInitProbeProvider,
+                                ModelContextWindowResolver contextWindowResolver,
+                                ConversationWindowProperties conversationWindowProperties) {
+        this(modelProviderMapper, modelConfigService, eventPublisher,
+                claudeCodeOAuthServiceProvider, null, providerPool,
+                providerHealthTracker, providerInitProbeProvider,
+                contextWindowResolver, conversationWindowProperties);
+    }
 
     /**
      * Register a ChatModel from a plugin.
@@ -485,7 +526,8 @@ public class ModelProviderService {
                 dto.setOauthExpiresAt(null);
             }
         } else {
-            dto.setOauthConnected(StringUtils.hasText(provider.getOauthAccessToken()));
+            dto.setOauthConnected(StringUtils.hasText(provider.getOauthAccessToken())
+                    || ("oauth".equals(provider.getAuthType()) && configured));
             dto.setOauthExpiresAt(provider.getOauthExpiresAt());
         }
         dto.setFallbackPriority(provider.getFallbackPriority() != null ? provider.getFallbackPriority() : 0);
@@ -523,7 +565,8 @@ public class ModelProviderService {
     private void applySuggestedAction(ProviderInfoDTO dto, ModelProviderEntity provider, Liveness liveness) {
         ProviderRequirements.Required req = ProviderRequirements.of(provider);
         boolean hasBaseUrl = StringUtils.hasText(provider.getBaseUrl());
-        boolean hasApiKey  = hasUsableApiKey(provider.getApiKey());
+        boolean hasApiKey  = hasUsableApiKey(provider.getApiKey())
+                || (req.needsApiKey() && Boolean.TRUE.equals(dto.getConfigured()));
         boolean hasModels  = (dto.getModels() != null && !dto.getModels().isEmpty())
                           || (dto.getExtraModels() != null && !dto.getExtraModels().isEmpty());
 
@@ -592,6 +635,12 @@ public class ModelProviderService {
     private boolean isProviderConfigured(ModelProviderEntity provider) {
         if (provider == null) {
             return false;
+        }
+
+        ProviderAccountService accounts = providerAccountServiceProvider == null
+                ? null : providerAccountServiceProvider.getIfAvailable();
+        if (accounts != null && !accounts.listUsableAccounts(provider.getProviderId()).isEmpty()) {
+            return true;
         }
 
         // OAuth providers store credentials elsewhere (DB column or disk for

@@ -8,6 +8,9 @@ import vip.mate.llm.chatgpt.ChatGPTResponsesClient;
 import vip.mate.llm.model.ModelConfigEntity;
 import vip.mate.llm.model.ModelProtocol;
 import vip.mate.llm.model.ModelProviderEntity;
+import org.springframework.http.HttpHeaders;
+
+import java.util.function.Consumer;
 
 /**
  * ChatGPT Responses API (the "/codex/responses" endpoint reached via OAuth)
@@ -32,7 +35,17 @@ public class ChatGPTResponsesChatModelBuilder implements ChatModelBuilder {
 
     @Override
     public ChatModel build(ModelConfigEntity model, ModelProviderEntity provider, RetryTemplate retry) {
+        return build(model, provider, retry, null);
+    }
+
+    public ChatModel build(ModelConfigEntity model, ModelProviderEntity provider,
+                           RetryTemplate retry, Consumer<HttpHeaders> responseHeaders) {
         Double temp = model.getTemperature() != null ? model.getTemperature() : 0.7;
+        if (provider != null && provider.getOauthAccessToken() != null
+                && !provider.getOauthAccessToken().isBlank()) {
+            return new ChatGPTChatModel(chatGPTResponsesClient, model.getModelName(), temp,
+                    provider.getOauthAccessToken(), provider.getOauthAccountId(), responseHeaders);
+        }
         return new ChatGPTChatModel(chatGPTResponsesClient, model.getModelName(), temp);
     }
 }

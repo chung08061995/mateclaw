@@ -12,11 +12,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import vip.mate.exception.MateClawException;
 import vip.mate.llm.oauth.OpenAIOAuthService;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * ChatGPT Backend API 客户端 — 调用 chatgpt.com/backend-api/codex/responses（Responses API 格式）
@@ -50,16 +52,52 @@ public class ChatGPTResponsesClient {
         }
     }
 
+    public record CallResult(String content, Integer inputTokens,
+                             Integer outputTokens, Integer totalTokens) {}
+
     /**
      * 同步调用 — 收集完整响应（仅文本部分）
      */
     public String call(String model, List<Message> messages, Double temperature, List<ToolDefinition> tools) {
-        return streamEvents(model, messages, temperature, tools)
-                .filter(e -> "text".equals(e.type()))
-                .map(StreamEvent::content)
-                .collectList()
-                .map(chunks -> String.join("", chunks))
-                .block();
+        return callResult(model, messages, temperature, tools, null, null, null).content();
+    }
+
+    public String call(String model, List<Message> messages, Double temperature,
+                       List<ToolDefinition> tools, String accessToken, String accountId) {
+        return call(model, messages, temperature, tools, accessToken, accountId, null);
+    }
+
+    public String call(String model, List<Message> messages, Double temperature,
+                       List<ToolDefinition> tools, String accessToken, String accountId,
+                       Consumer<HttpHeaders> responseHeaders) {
+        return callResult(model, messages, temperature, tools, accessToken, accountId,
+                responseHeaders).content();
+    }
+
+    public CallResult callResult(String model, List<Message> messages, Double temperature,
+                                 List<ToolDefinition> tools, String accessToken,
+                                 String accountId, Consumer<HttpHeaders> responseHeaders) {
+        Flux<StreamEvent> events = accessToken == null
+                ? streamEvents(model, messages, temperature, tools)
+                : streamEvents(model, messages, temperature, tools, accessToken,
+                        accountId, responseHeaders);
+        return events.collectList().map(items -> {
+            String content = items.stream()
+                    .filter(event -> "text".equals(event.type()))
+                    .map(StreamEvent::content)
+                    .filter(Objects::nonNull)
+                    .collect(java.util.stream.Collectors.joining());
+            StreamEvent usage = items.stream()
+                    .filter(event -> "done".equals(event.type()))
+                    .filter(event -> event.inputTokens() != null
+                            || event.outputTokens() != null || event.totalTokens() != null)
+                    .reduce((first, second) -> second)
+                    .orElse(null);
+            return new CallResult(content,
+                    usage == null ? null : usage.inputTokens(),
+                    usage == null ? null : usage.outputTokens(),
+                    usage == null ? null : usage.totalTokens());
+        }).block();
     }
 
     /**
@@ -69,6 +107,23 @@ public class ChatGPTResponsesClient {
                                           List<ToolDefinition> tools) {
         String accessToken = oauthService.ensureValidAccessToken();
         String accountId = oauthService.getAccountId();
+        return streamEvents(model, messages, temperature, tools, accessToken, accountId);
+    }
+
+    /**
+     * Account-scoped variant used by the provider account pool. Credentials
+     * are explicit so concurrent conversations can use different ChatGPT
+     * accounts without mutating the singleton provider row.
+     */
+    public Flux<StreamEvent> streamEvents(String model, List<Message> messages, Double temperature,
+                                          List<ToolDefinition> tools, String accessToken,
+                                          String accountId) {
+        return streamEvents(model, messages, temperature, tools, accessToken, accountId, null);
+    }
+
+    public Flux<StreamEvent> streamEvents(String model, List<Message> messages, Double temperature,
+                                          List<ToolDefinition> tools, String accessToken,
+                                          String accountId, Consumer<HttpHeaders> responseHeaders) {
         ObjectNode requestBody = buildRequestBody(model, messages, temperature, tools);
         String bodyJson = requestBody.toString();
         log.info("[ChatGPT] Request: model={}, messages={}, tools={}", model, messages.size(),
@@ -82,14 +137,21 @@ public class ChatGPTResponsesClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .bodyValue(bodyJson)
-                .retrieve()
-                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                        response -> response.bodyToMono(String.class)
-                                .map(errorBody -> {
-                                    log.error("[ChatGPT] API error {}: {}", response.statusCode(), errorBody);
-                                    return new MateClawException("ChatGPT API " + response.statusCode() + ": " + errorBody);
-                                }))
-                .bodyToFlux(String.class)
+                .exchangeToFlux(response -> {
+                    if (responseHeaders != null) {
+                        try {
+                            responseHeaders.accept(HttpHeaders.readOnlyHttpHeaders(
+                                    response.headers().asHttpHeaders()));
+                        } catch (RuntimeException observerError) {
+                            log.warn("[ChatGPT] Failed to record provider quota headers", observerError);
+                        }
+                    }
+                    if (response.statusCode().isError()) {
+                        return response.createException()
+                                .flatMapMany(error -> Flux.error(error));
+                    }
+                    return response.bodyToFlux(String.class);
+                })
                 .doOnNext(raw -> log.debug("[ChatGPT] SSE raw: {}", raw.length() > 200 ? raw.substring(0, 200) + "..." : raw))
                 .filter(line -> !line.isBlank() && !line.equals("[DONE]"))
                 .filter(line -> line.startsWith("data:"))
@@ -99,7 +161,8 @@ public class ChatGPTResponsesClient {
                 })
                 .filter(line -> !line.isBlank() && !line.equals("[DONE]"))
                 .mapNotNull(this::parseSSEEvent)
-                .onErrorMap(e -> e instanceof MateClawException ? e
+                .onErrorMap(e -> e instanceof MateClawException
+                        || e instanceof WebClientResponseException ? e
                         : new MateClawException("err.llm.chatgpt_stream_failed", "ChatGPT 流式调用失败: " + e.getMessage()));
     }
 

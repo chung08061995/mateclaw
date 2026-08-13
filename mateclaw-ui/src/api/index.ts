@@ -9,6 +9,13 @@ import type {
   ResolutionLog,
   GrantScope,
 } from '@/types'
+import type {
+  CreateProviderAccountPayload,
+  ProviderAccountId,
+  ProviderUsageAccount,
+  ProviderUsageSummaryPayload,
+  UpdateProviderAccountPayload,
+} from '@/types/providerUsage'
 
 /**
  * URL-encode a conversation id before interpolating it into a path. Some ids
@@ -846,6 +853,22 @@ export const securityApi = {
 export const tokenUsageApi = {
   getSummary: (params?: { startDate?: string; endDate?: string; modelName?: string; providerId?: string }) =>
     http.get('/token-usage', { params }),
+}
+
+// ==================== Provider Accounts & Quota ====================
+export const providerAccountApi = {
+  summary: () => http.get<ProviderUsageSummaryPayload | ProviderUsageAccount[]>('/llm/provider-accounts/usage'),
+  create: (data: CreateProviderAccountPayload) => http.post('/llm/provider-accounts', data),
+  update: (id: ProviderAccountId, data: UpdateProviderAccountPayload) =>
+    http.put(`/llm/provider-accounts/${encodeURIComponent(String(id))}`, data),
+  enable: (id: ProviderAccountId) =>
+    http.post(`/llm/provider-accounts/${encodeURIComponent(String(id))}/enable`),
+  disable: (id: ProviderAccountId) =>
+    http.post(`/llm/provider-accounts/${encodeURIComponent(String(id))}/disable`),
+  remove: (id: ProviderAccountId) =>
+    http.delete(`/llm/provider-accounts/${encodeURIComponent(String(id))}`),
+  reorder: (providerId: string, accountIds: ProviderAccountId[]) =>
+    http.put(`/llm/provider-accounts/providers/${encodeURIComponent(providerId)}/order`, { accountIds }),
 }
 
 // ==================== CronJob ====================

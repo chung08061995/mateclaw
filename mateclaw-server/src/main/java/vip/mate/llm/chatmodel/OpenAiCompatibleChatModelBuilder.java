@@ -215,7 +215,7 @@ public class OpenAiCompatibleChatModelBuilder implements ChatModelBuilder {
      * the streaming WebClient. Null falls back to the default 180s.
      */
     OpenAiApi buildOpenAiApi(ModelProviderEntity provider, Integer readTimeoutOverride) {
-        if (provider == null || !modelProviderService.isProviderConfigured(provider.getProviderId())) {
+        if (provider == null) {
             throw new MateClawException("err.agent.provider_not_configured",
                     "Provider 未完成配置，请在模型设置中填写有效的 API Key 和 Base URL");
         }
