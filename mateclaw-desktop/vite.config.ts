@@ -34,7 +34,12 @@ export default defineConfig(({ command }) => {
               minify: isBuild,
               outDir: 'dist-electron/main',
               rollupOptions: {
-                external: ['electron', 'electron-updater'],
+                // Keep ws as CommonJS at runtime. Bundling it makes Rollup
+                // replace ws's optional `require('bufferutil')` with an empty
+                // module; frames >= 48 bytes then crash on `{}.mask()`.
+                // The unbundled package catches the missing optional native
+                // dependency and correctly falls back to its JavaScript mask.
+                external: ['electron', 'electron-updater', 'ws'],
               },
             },
           },
