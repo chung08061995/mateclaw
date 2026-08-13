@@ -77,11 +77,47 @@ export function clampedQuotaPercent(account: ProviderUsageAccount): number | nul
 }
 
 function timestamp(value: string | number | null | undefined): number {
-  if (value == null || value === '') return 0
+  return parseProviderTimestamp(value)?.getTime() ?? 0
+}
+
+/**
+ * Provider timestamps may arrive as ISO strings, epoch milliseconds, or epoch
+ * milliseconds serialised as strings. Some upstream errors use epoch seconds,
+ * so accept those too at this API boundary.
+ */
+export function parseProviderTimestamp(
+  value: string | number | null | undefined,
+): Date | null {
+  if (value == null || value === '') return null
+
   const numeric = Number(value)
-  if (Number.isFinite(numeric)) return numeric
-  const parsed = Date.parse(String(value))
-  return Number.isFinite(parsed) ? parsed : 0
+  const parsed = Number.isFinite(numeric)
+    ? (Math.abs(numeric) < 1_000_000_000_000 ? numeric * 1_000 : numeric)
+    : Date.parse(String(value))
+
+  if (!Number.isFinite(parsed)) return null
+  const date = new Date(parsed)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+export function formatProviderTimestamp(
+  value: string | number | null | undefined,
+  locale = 'en-US',
+  timeZone?: string,
+): string | null {
+  const date = parseProviderTimestamp(value)
+  if (!date) return null
+
+  return new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone,
+    timeZoneName: 'short',
+  }).format(date)
 }
 
 /**

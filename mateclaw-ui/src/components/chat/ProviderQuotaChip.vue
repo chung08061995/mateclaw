@@ -2,7 +2,12 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ProviderUsageAccount } from '@/types/providerUsage'
-import { clampedQuotaPercent, hasKnownQuota, providerAlertTone } from '@/utils/providerUsage'
+import {
+  clampedQuotaPercent,
+  formatProviderTimestamp,
+  hasKnownQuota,
+  providerAlertTone,
+} from '@/utils/providerUsage'
 
 const props = defineProps<{ account: ProviderUsageAccount }>()
 const emit = defineEmits<{ details: [] }>()
@@ -39,14 +44,7 @@ const statusLabel = computed(() => {
 })
 
 function formatDate(value: string | number | null | undefined): string | null {
-  if (value == null || value === '') return null
-  const numeric = Number(value)
-  const date = new Date(Number.isFinite(numeric) ? numeric : String(value))
-  if (Number.isNaN(date.getTime())) return null
-  return new Intl.DateTimeFormat(locale.value, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date)
+  return formatProviderTimestamp(value, locale.value)
 }
 
 const resetAt = computed(() => formatDate(props.account.quotaResetAt))

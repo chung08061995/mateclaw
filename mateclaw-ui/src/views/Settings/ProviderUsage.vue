@@ -189,8 +189,8 @@
           </section>
 
           <div v-if="account.lastErrorMessage || account.lastErrorCode" class="account-error" role="status">
-            <strong v-if="account.lastErrorCode">{{ account.lastErrorCode }}</strong>
-            <span>{{ account.lastErrorMessage }}</span>
+            <strong>{{ accountErrorTitle(account) }}</strong>
+            <span>{{ accountErrorMessage(account) }}</span>
           </div>
 
           <footer class="account-actions">
@@ -318,12 +318,14 @@ import type { ProviderInfo } from '@/types'
 import { getProviderIcon, onProviderIconError } from '@/utils/providerIcons'
 import {
   clampedQuotaPercent,
+  formatProviderTimestamp,
   hasKnownQuota,
   normalizeProviderUsageAccounts,
+  parseProviderTimestamp,
   providerAlertTone,
 } from '@/utils/providerUsage'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 type CredentialPreset = 'openai-oauth' | 'openai-api' | 'claude-api' | 'gemini-api'
 
@@ -429,18 +431,11 @@ function formatNumber(value: number): string {
 }
 
 function formatDate(value: string | number): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date)
+  return formatProviderTimestamp(value, locale.value) || t('providerUsage.timeUnavailable')
 }
 
 function timestamp(value?: string | number | null): number {
-  if (value == null) return 0
-  const parsed = new Date(value).getTime()
-  return Number.isNaN(parsed) ? 0 : parsed
+  return parseProviderTimestamp(value)?.getTime() ?? 0
 }
 
 function knownQuota(account: ProviderUsageAccount): boolean {
@@ -458,6 +453,21 @@ function displayQuota(account: ProviderUsageAccount): string {
 
 function alertTone(account: ProviderUsageAccount) {
   return providerAlertTone(account)
+}
+
+function isUsageLimitReached(account: ProviderUsageAccount): boolean {
+  const detail = `${account.lastErrorCode || ''} ${account.lastErrorMessage || ''}`.toLowerCase()
+  return detail.includes('usage_limit_reached') || detail.includes('usage limit has been reached')
+}
+
+function accountErrorTitle(account: ProviderUsageAccount): string {
+  if (isUsageLimitReached(account)) return t('providerUsage.usageLimitReachedTitle')
+  return account.lastErrorCode || t('providerUsage.providerErrorTitle')
+}
+
+function accountErrorMessage(account: ProviderUsageAccount): string {
+  if (isUsageLimitReached(account)) return t('providerUsage.usageLimitReachedMessage')
+  return account.lastErrorMessage || t('providerUsage.providerErrorMessage')
 }
 
 function accountKey(account: ProviderUsageAccount): string {
