@@ -30,6 +30,7 @@ import java.math.RoundingMode;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.time.Instant;
 import java.util.regex.Matcher;
@@ -318,7 +319,10 @@ public class ProviderAccountService {
         return ProviderAccountDTO.from(entity);
     }
 
+    @Transactional
     public void deleteAccount(Long accountId) {
+        ProviderAccountEntity account = getRequired(accountId);
+        clearOwnedLegacyCredential(account);
         if (accountMapper.deleteById(accountId) == 0) throw notFound(accountId);
     }
 
@@ -536,6 +540,74 @@ public class ProviderAccountService {
 
     private MateClawException notFound(Long accountId) {
         return new MateClawException(404, "Provider account not found: " + accountId);
+    }
+
+    /**
+     * A lazily imported account has two copies of its credential during the
+     * compatibility window: the normalized account row and the old provider
+     * columns. Removing only the account row makes the next list request import
+     * it again. Clear the old copy only when it still belongs to this exact
+     * account, so deleting one pooled account never disconnects another one.
+     */
+    private void clearOwnedLegacyCredential(ProviderAccountEntity account) {
+        ModelProviderEntity legacy = legacyProviderMapper.selectById(account.getProviderId());
+        if (legacy == null) return;
+
+        if (AUTH_OAUTH.equalsIgnoreCase(account.getAuthType())
+                && ownsLegacyOAuthCredential(account, legacy)) {
+            int updated = legacyProviderMapper.update(null,
+                    new LambdaUpdateWrapper<ModelProviderEntity>()
+                            .eq(ModelProviderEntity::getProviderId, account.getProviderId())
+                            .set(ModelProviderEntity::getOauthAccessToken, null)
+                            .set(ModelProviderEntity::getOauthRefreshToken, null)
+                            .set(ModelProviderEntity::getOauthExpiresAt, null)
+                            .set(ModelProviderEntity::getOauthAccountId, null));
+            if (updated == 0) {
+                throw new MateClawException("Failed to disconnect legacy OAuth credential for provider "
+                        + account.getProviderId());
+            }
+            legacy.setOauthAccessToken(null);
+            legacy.setOauthRefreshToken(null);
+            legacy.setOauthExpiresAt(null);
+            legacy.setOauthAccountId(null);
+            return;
+        }
+
+        if (AUTH_API_KEY.equalsIgnoreCase(account.getAuthType())
+                && ownsLegacyApiKey(account, legacy)) {
+            int updated = legacyProviderMapper.update(null,
+                    new LambdaUpdateWrapper<ModelProviderEntity>()
+                            .eq(ModelProviderEntity::getProviderId, account.getProviderId())
+                            .set(ModelProviderEntity::getApiKey, null));
+            if (updated == 0) {
+                throw new MateClawException("Failed to disconnect legacy API key for provider "
+                        + account.getProviderId());
+            }
+            legacy.setApiKey(null);
+        }
+    }
+
+    private boolean ownsLegacyOAuthCredential(ProviderAccountEntity account,
+                                              ModelProviderEntity legacy) {
+        if (!StringUtils.hasText(legacy.getOauthAccessToken())) return false;
+        if (StringUtils.hasText(account.getExternalAccountId())
+                && StringUtils.hasText(legacy.getOauthAccountId())) {
+            return account.getExternalAccountId().trim()
+                    .equals(legacy.getOauthAccountId().trim());
+        }
+        if (!Boolean.TRUE.equals(account.getLegacyImport())) return false;
+        CredentialPayload payload = readCredentialPayload(account);
+        return Objects.equals(payload.accessToken(), legacy.getOauthAccessToken());
+    }
+
+    private boolean ownsLegacyApiKey(ProviderAccountEntity account,
+                                     ModelProviderEntity legacy) {
+        if (!Boolean.TRUE.equals(account.getLegacyImport())
+                || !hasUsableLegacyApiKey(legacy.getApiKey())) {
+            return false;
+        }
+        CredentialPayload payload = readCredentialPayload(account);
+        return Objects.equals(payload.apiKey(), legacy.getApiKey().trim());
     }
 
     private void importAllLegacyProviders() {
