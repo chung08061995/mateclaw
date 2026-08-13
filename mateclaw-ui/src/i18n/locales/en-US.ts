@@ -1081,10 +1081,12 @@ export default {
       oauthRevokeSuccess: 'OpenAI OAuth disconnected',
       // Device Authorization Grant (used for remote deployments where the browser
       // cannot reach localhost:1455 for the PKCE callback).
-      oauthDeviceTitle: 'Sign in to ChatGPT (Device Code)',
-      oauthDeviceStep1: '1. Open this link in any browser or on your phone:',
+      oauthDeviceTitle: 'Sign in to ChatGPT',
+      oauthDeviceStep1: 'Your browser should open automatically. If it does not, use the button or link below:',
       oauthDeviceStep2: '2. Enter this verification code:',
       oauthDeviceStep3: 'This page will connect automatically once you finish ({seconds}s remaining)',
+      oauthDeviceOpen: 'Open sign-in page',
+      oauthDeviceOpenFailed: 'MateClaw could not open your browser. Use the sign-in link shown in the dialog.',
       oauthDeviceExpired: 'The device code expired. Please try again.',
       copy: 'Copy',
       copied: 'Copied',

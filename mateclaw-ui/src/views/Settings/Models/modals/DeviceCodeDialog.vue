@@ -7,14 +7,9 @@
       </div>
       <div class="modal-body device-body">
         <p class="device-step">{{ t('settings.model.oauthDeviceStep1') }}</p>
-        <a
-          class="device-link"
-          :href="verificationUrlComplete || verificationUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <button class="device-link" type="button" @click="openSignInPage">
           {{ verificationUrl }}
-        </a>
+        </button>
 
         <p class="device-step">{{ t('settings.model.oauthDeviceStep2') }}</p>
         <div class="device-code-row">
@@ -32,6 +27,9 @@
         <button class="btn-secondary" @click="$emit('close')">
           {{ t('common.cancel') }}
         </button>
+        <button class="btn-primary" type="button" @click="openSignInPage">
+          {{ t('settings.model.oauthDeviceOpen') }}
+        </button>
       </div>
     </div>
   </div>
@@ -42,6 +40,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { mcToast } from '@/composables/useMcToast'
 import { copyToClipboard } from '@/utils/clipboard'
+import { openOpenAIAuthUrl } from '@/utils/openOpenAIAuthUrl'
 
 const props = defineProps<{
   visible: boolean
@@ -91,6 +90,13 @@ async function copyCode() {
     mcToast.warning(t('settings.model.copyFailed'))
   }
 }
+
+async function openSignInPage() {
+  const opened = await openOpenAIAuthUrl(props.verificationUrlComplete || props.verificationUrl)
+  if (!opened) {
+    mcToast.warning(t('settings.model.oauthDeviceOpenFailed'))
+  }
+}
 </script>
 
 <style scoped>
@@ -111,6 +117,7 @@ async function copyCode() {
   max-width: 480px;
   display: flex;
   flex-direction: column;
+  max-height: calc(100dvh - 40px);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
 }
 .modal-header,
@@ -130,6 +137,7 @@ async function copyCode() {
   border-top: 1px solid var(--mc-border-light);
   border-bottom: none;
   justify-content: flex-end;
+  gap: 10px;
 }
 .modal-close {
   background: transparent;
@@ -144,6 +152,7 @@ async function copyCode() {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
 }
 .device-step {
   margin: 0;
@@ -151,11 +160,19 @@ async function copyCode() {
   color: var(--mc-text-secondary);
 }
 .device-link {
-  display: inline-block;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
   font-family: var(--mc-mono, monospace);
   font-size: 14px;
   color: var(--mc-primary);
   word-break: break-all;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
 }
 .device-code-row {
   display: flex;
@@ -164,8 +181,8 @@ async function copyCode() {
 }
 .device-code {
   font-family: var(--mc-mono, ui-monospace, SFMono-Regular, monospace);
-  font-size: 28px;
-  letter-spacing: 6px;
+  font-size: clamp(20px, 6vw, 28px);
+  letter-spacing: clamp(3px, 1.2vw, 6px);
   font-weight: 700;
   padding: 14px 20px;
   background: var(--mc-bg-sunken);
@@ -183,6 +200,7 @@ async function copyCode() {
   padding: 8px 14px;
   font-size: 13px;
   cursor: pointer;
+  min-height: 44px;
 }
 .btn-copy:hover {
   background: var(--mc-bg-sunken);
@@ -192,7 +210,8 @@ async function copyCode() {
   font-size: 12px;
   color: var(--mc-text-tertiary);
 }
-.btn-secondary {
+.btn-secondary,
+.btn-primary {
   border: 1px solid var(--mc-border);
   background: var(--mc-bg-elevated);
   color: var(--mc-text-primary);
@@ -200,8 +219,52 @@ async function copyCode() {
   padding: 9px 14px;
   font-size: 14px;
   cursor: pointer;
+  min-height: 44px;
+}
+.btn-primary {
+  border-color: var(--mc-primary);
+  background: var(--mc-primary);
+  color: #fff;
 }
 .btn-secondary:hover {
   background: var(--mc-bg-sunken);
+}
+.btn-primary:hover {
+  filter: brightness(0.96);
+}
+
+@media (max-width: 480px), (max-height: 620px) {
+  .modal-overlay {
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+  .modal {
+    max-height: calc(100dvh - 16px);
+  }
+  .modal-header,
+  .modal-footer {
+    padding: 12px 14px;
+  }
+  .modal-header h2 {
+    font-size: 16px;
+  }
+  .device-body {
+    padding: 16px 14px;
+    gap: 10px;
+  }
+  .device-code-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .device-code {
+    padding: 12px 10px;
+  }
+  .modal-footer {
+    flex-wrap: wrap-reverse;
+  }
+  .btn-secondary,
+  .btn-primary {
+    flex: 1 1 140px;
+  }
 }
 </style>

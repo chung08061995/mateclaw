@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { mcToast } from '@/composables/useMcToast'
 import { claudeCodeOAuthApi, oauthApi } from '@/api'
 import type { ProviderInfo } from '@/types'
+import { openOpenAIAuthUrl } from '@/utils/openOpenAIAuthUrl'
 
 interface FormDeps {
   /** Editing-modal context — rebound after a load so the modal sees fresh OAuth state. */
@@ -90,6 +91,12 @@ export function useProviderOAuth(deps: FormDeps & ListDeps) {
       verificationUrl: data.verificationUrl,
       verificationUrlComplete: data.verificationUrlComplete ?? null,
       expiresAt: Date.now() + (data.expiresInSeconds ?? 600) * 1000,
+    }
+
+    const authUrl = data.verificationUrlComplete || data.verificationUrl
+    const opened = await openOpenAIAuthUrl(authUrl)
+    if (!opened) {
+      mcToast.warning(t('settings.model.oauthDeviceOpenFailed'))
     }
 
     const intervalMs = Math.max((data.intervalSeconds ?? 5) * 1000, 3000)
